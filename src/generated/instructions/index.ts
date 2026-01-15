@@ -6,4 +6,6 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./vault";
+export * from "./calculateScore";
+export * from "./createIdentity";
+export * from "./verifyIdentity";

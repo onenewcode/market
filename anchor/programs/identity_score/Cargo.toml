@@ -1,12 +1,12 @@
 [package]
-name = "vault"
+name = "identity_score"
 version = "0.1.0"
-description = "A simple SOL vault program"
+description = "Combined Identity and Credit Score Program"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "vault"
+name = "identity_score"
 
 [features]
 default = []
@@ -17,8 +17,13 @@ no-log-ix-name = []
 idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
-anchor-lang = "0.32.1"
+anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
+
 
 [dev-dependencies]
 litesvm = "=0.7.1"
 solana-sdk = "2.3"
+
+
+
+
