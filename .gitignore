@@ -27,3 +27,4 @@ lerna-debug.log*
 /anchor/.anchor/
 /anchor/target/
 /test-ledger/
+/.trae/

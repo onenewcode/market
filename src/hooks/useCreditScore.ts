@@ -16,9 +16,15 @@ import {
   getCalculateScoreInstructionDataEncoder 
 } from "../generated/instructions/calculateScore";
 import { 
+  getCreateIdentityInstructionDataEncoder 
+} from "../generated/instructions/createIdentity";
+import { 
   fetchMaybeCreditScoreAccount,
   type CreditScoreAccount
 } from "../generated/accounts/creditScoreAccount";
+import { 
+  fetchMaybeIdentityAccount
+} from "../generated/accounts/identityAccount";
 import { client } from "../solanaClient";
 
 export function useCreditScore() {
@@ -56,7 +62,28 @@ export function useCreditScore() {
                 cachedIdentityPda ?? getPda(SEEDS.IDENTITY, walletAddress),
             ]);
 
-            const instruction = {
+            const instructions: {
+                programAddress: Address;
+                accounts: { address: Address; role: number }[];
+                data: Uint8Array;
+            }[] = [];
+
+            // Check if identity exists, if not, create it
+            const identityAccount = await fetchMaybeIdentityAccount(rpc, identityPda);
+            if (!identityAccount.exists) {
+                 instructions.push({
+                    programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
+                    accounts: [
+                        { address: identityPda, role: 1 }, // Writable
+                        { address: walletAddress, role: 3 }, // WritableSigner
+                        { address: SYSTEM_PROGRAM_ADDRESS, role: 0 },
+                    ],
+                    data: new Uint8Array(getCreateIdentityInstructionDataEncoder().encode({})),
+                 });
+                 console.log("%c[CreditScore] Adding createIdentity instruction", logStyle);
+            }
+
+            instructions.push({
                 programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
                 accounts: [
                     { address: scorePda, role: 1 },
@@ -64,16 +91,16 @@ export function useCreditScore() {
                     { address: walletAddress, role: 3 },
                     { address: SYSTEM_PROGRAM_ADDRESS, role: 0 },
                 ],
-                data: getCalculateScoreInstructionDataEncoder().encode({}),
-            };
+                data: new Uint8Array(getCalculateScoreInstructionDataEncoder().encode({})),
+            });
 
             const tSendStart = performance.now();
             const sendOnce = async () => {
                 if (session) {
-                    pool.replaceInstructions([instruction]);
+                    pool.replaceInstructions(instructions);
                     await pool.prepareAndSend({ authority: session, version: "legacy" });
                 } else {
-                    await send({ instructions: [instruction] });
+                    await send({ instructions });
                 }
             };
             try {
