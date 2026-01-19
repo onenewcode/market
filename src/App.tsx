@@ -3,6 +3,7 @@ import { AuthPage } from "./AuthPage";
 import { IdentityPage } from "./IdentityPage";
 import { CreditScorePage } from "./CreditScorePage";
 import { useWalletConnection } from "@solana/react-hooks";
+import { theme } from "./styles/theme";
 
 export default function App() {
   const [page, setPage] = useState("auth");
@@ -27,13 +28,13 @@ export default function App() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-x-clip bg-bg1 text-foreground">
-      <main className="relative z-10 mx-auto flex min-h-screen max-w-4xl flex-col gap-10 border-x border-border-low px-6 py-16">
-        <header className="space-y-3">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+    <div className={theme.layout.mainContainer}>
+      <main className={theme.layout.contentWrapper}>
+        <header className={theme.layout.header}>
+          <h1 className={theme.typography.h1}>
             Chain Identity & Credit Score
           </h1>
-          <p className="max-w-3xl text-base leading-relaxed text-muted">
+          <p className={`max-w-3xl ${theme.typography.body}`}>
             Manage your on-chain identity and view your credit score based on your wallet activity.
           </p>
           
@@ -41,19 +42,19 @@ export default function App() {
             <nav className="flex gap-4 mt-4 border-b border-border-low pb-1">
                 <button 
                     onClick={() => setPage("auth")}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${page === "auth" ? "border-primary text-primary" : "border-transparent text-muted hover:text-foreground"}`}
+                    className={`${theme.button.nav.base} ${page === "auth" ? theme.button.nav.active : theme.button.nav.inactive}`}
                 >
                     Home
                 </button>
                 <button 
                     onClick={() => setPage("identity")}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${page === "identity" ? "border-primary text-primary" : "border-transparent text-muted hover:text-foreground"}`}
+                    className={`${theme.button.nav.base} ${page === "identity" ? theme.button.nav.active : theme.button.nav.inactive}`}
                 >
                     Identity
                 </button>
                 <button 
                     onClick={() => setPage("credit_score")}
-                    className={`px-3 py-2 text-sm font-medium border-b-2 transition-colors cursor-pointer ${page === "credit_score" ? "border-primary text-primary" : "border-transparent text-muted hover:text-foreground"}`}
+                    className={`${theme.button.nav.base} ${page === "credit_score" ? theme.button.nav.active : theme.button.nav.inactive}`}
                 >
                     Credit Score
                 </button>
@@ -61,7 +62,7 @@ export default function App() {
           )}
         </header>
 
-        <section className="w-full max-w-3xl">
+        <section className={theme.layout.section}>
           {renderPage()}
         </section>
       </main>
