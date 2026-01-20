@@ -159,15 +159,6 @@ export async function getCalculateScoreInstructionAsync<
   >;
 
   // Resolve default values.
-  if (!accounts.scoreAccount.value) {
-    accounts.scoreAccount.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([115, 99, 111, 114, 101])),
-        getAddressEncoder().encode(expectAddress(accounts.owner.value)),
-      ],
-    });
-  }
   if (!accounts.identity.value) {
     accounts.identity.value = await getProgramDerivedAddress({
       programAddress,
@@ -176,6 +167,15 @@ export async function getCalculateScoreInstructionAsync<
           new Uint8Array([105, 100, 101, 110, 116, 105, 116, 121]),
         ),
         getAddressEncoder().encode(expectAddress(accounts.owner.value)),
+      ],
+    });
+  }
+  if (!accounts.scoreAccount.value) {
+    accounts.scoreAccount.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(new Uint8Array([115, 99, 111, 114, 101])),
+        getAddressEncoder().encode(expectAddress(accounts.identity.value)),
       ],
     });
   }

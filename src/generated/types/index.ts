@@ -6,4 +6,8 @@
  * @see https://github.com/codama-idl/codama
  */
 
+export * from "./identityCreated";
+export * from "./identityMigrated";
+export * from "./identityVerified";
+export * from "./scoreCalculated";
 export * from "./scoreLevel";

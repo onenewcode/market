@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 pub mod constants;
 pub mod errors;
+pub mod events;
 pub mod instructions;
 pub mod state;
 mod tests;
@@ -20,6 +21,10 @@ pub mod identity_score {
 
     pub fn verify_identity(ctx: Context<VerifyIdentity>) -> Result<()> {
         instructions::identity::verify_identity(ctx)
+    }
+
+    pub fn unverify_identity(ctx: Context<UnverifyIdentity>) -> Result<()> {
+        instructions::identity::unverify_identity(ctx)
     }
 
     pub fn calculate_score(ctx: Context<CalculateScore>) -> Result<()> {

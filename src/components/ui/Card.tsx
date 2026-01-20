@@ -7,13 +7,11 @@ interface CardProps {
 }
 
 export function Card({ children, className = "" }: CardProps) {
-  return (
-    <div className={`${theme.layout.card} ${className}`}>
-      {children}
-    </div>
-  );
+  return <div className={`${theme.layout.card} ${className}`}>{children}</div>;
 }
 
 export function CardTitle({ children, className = "" }: CardProps) {
-  return <h2 className={`${theme.typography.h2} mb-4 ${className}`}>{children}</h2>;
+  return (
+    <h2 className={`${theme.typography.h2} mb-4 ${className}`}>{children}</h2>
+  );
 }

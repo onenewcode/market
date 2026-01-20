@@ -26,6 +26,7 @@ import {
   type Instruction,
   type InstructionWithAccounts,
   type InstructionWithData,
+  type ReadonlyAccount,
   type ReadonlySignerAccount,
   type ReadonlyUint8Array,
   type TransactionSigner,
@@ -52,6 +53,8 @@ export type VerifyIdentityInstruction<
   TProgram extends string = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
   TAccountIdentity extends string | AccountMeta<string> = string,
   TAccountOwner extends string | AccountMeta<string> = string,
+  TAccountConfig extends string | AccountMeta<string> = string,
+  TAccountAdmin extends string | AccountMeta<string> = string,
   TRemainingAccounts extends readonly AccountMeta<string>[] = [],
 > = Instruction<TProgram> &
   InstructionWithData<ReadonlyUint8Array> &
@@ -61,9 +64,15 @@ export type VerifyIdentityInstruction<
         ? WritableAccount<TAccountIdentity>
         : TAccountIdentity,
       TAccountOwner extends string
-        ? ReadonlySignerAccount<TAccountOwner> &
-            AccountSignerMeta<TAccountOwner>
+        ? ReadonlyAccount<TAccountOwner>
         : TAccountOwner,
+      TAccountConfig extends string
+        ? ReadonlyAccount<TAccountConfig>
+        : TAccountConfig,
+      TAccountAdmin extends string
+        ? ReadonlySignerAccount<TAccountAdmin> &
+            AccountSignerMeta<TAccountAdmin>
+        : TAccountAdmin,
       ...TRemainingAccounts,
     ]
   >;
@@ -100,20 +109,37 @@ export function getVerifyIdentityInstructionDataCodec(): FixedSizeCodec<
 export type VerifyIdentityAsyncInput<
   TAccountIdentity extends string = string,
   TAccountOwner extends string = string,
+  TAccountConfig extends string = string,
+  TAccountAdmin extends string = string,
 > = {
   identity?: Address<TAccountIdentity>;
-  owner: TransactionSigner<TAccountOwner>;
+  owner: Address<TAccountOwner>;
+  config?: Address<TAccountConfig>;
+  admin: TransactionSigner<TAccountAdmin>;
 };
 
 export async function getVerifyIdentityInstructionAsync<
   TAccountIdentity extends string,
   TAccountOwner extends string,
+  TAccountConfig extends string,
+  TAccountAdmin extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: VerifyIdentityAsyncInput<TAccountIdentity, TAccountOwner>,
+  input: VerifyIdentityAsyncInput<
+    TAccountIdentity,
+    TAccountOwner,
+    TAccountConfig,
+    TAccountAdmin
+  >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  VerifyIdentityInstruction<TProgramAddress, TAccountIdentity, TAccountOwner>
+  VerifyIdentityInstruction<
+    TProgramAddress,
+    TAccountIdentity,
+    TAccountOwner,
+    TAccountConfig,
+    TAccountAdmin
+  >
 > {
   // Program address.
   const programAddress =
@@ -123,6 +149,8 @@ export async function getVerifyIdentityInstructionAsync<
   const originalAccounts = {
     identity: { value: input.identity ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: false },
+    config: { value: input.config ?? null, isWritable: false },
+    admin: { value: input.admin ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -141,38 +169,67 @@ export async function getVerifyIdentityInstructionAsync<
       ],
     });
   }
+  if (!accounts.config.value) {
+    accounts.config.value = await getProgramDerivedAddress({
+      programAddress,
+      seeds: [
+        getBytesEncoder().encode(new Uint8Array([99, 111, 110, 102, 105, 103])),
+      ],
+    });
+  }
 
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
       getAccountMeta(accounts.identity),
       getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.config),
+      getAccountMeta(accounts.admin),
     ],
     data: getVerifyIdentityInstructionDataEncoder().encode({}),
     programAddress,
   } as VerifyIdentityInstruction<
     TProgramAddress,
     TAccountIdentity,
-    TAccountOwner
+    TAccountOwner,
+    TAccountConfig,
+    TAccountAdmin
   >);
 }
 
 export type VerifyIdentityInput<
   TAccountIdentity extends string = string,
   TAccountOwner extends string = string,
+  TAccountConfig extends string = string,
+  TAccountAdmin extends string = string,
 > = {
   identity: Address<TAccountIdentity>;
-  owner: TransactionSigner<TAccountOwner>;
+  owner: Address<TAccountOwner>;
+  config: Address<TAccountConfig>;
+  admin: TransactionSigner<TAccountAdmin>;
 };
 
 export function getVerifyIdentityInstruction<
   TAccountIdentity extends string,
   TAccountOwner extends string,
+  TAccountConfig extends string,
+  TAccountAdmin extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: VerifyIdentityInput<TAccountIdentity, TAccountOwner>,
+  input: VerifyIdentityInput<
+    TAccountIdentity,
+    TAccountOwner,
+    TAccountConfig,
+    TAccountAdmin
+  >,
   config?: { programAddress?: TProgramAddress },
-): VerifyIdentityInstruction<TProgramAddress, TAccountIdentity, TAccountOwner> {
+): VerifyIdentityInstruction<
+  TProgramAddress,
+  TAccountIdentity,
+  TAccountOwner,
+  TAccountConfig,
+  TAccountAdmin
+> {
   // Program address.
   const programAddress =
     config?.programAddress ?? IDENTITY_SCORE_PROGRAM_ADDRESS;
@@ -181,6 +238,8 @@ export function getVerifyIdentityInstruction<
   const originalAccounts = {
     identity: { value: input.identity ?? null, isWritable: true },
     owner: { value: input.owner ?? null, isWritable: false },
+    config: { value: input.config ?? null, isWritable: false },
+    admin: { value: input.admin ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
     keyof typeof originalAccounts,
@@ -192,13 +251,17 @@ export function getVerifyIdentityInstruction<
     accounts: [
       getAccountMeta(accounts.identity),
       getAccountMeta(accounts.owner),
+      getAccountMeta(accounts.config),
+      getAccountMeta(accounts.admin),
     ],
     data: getVerifyIdentityInstructionDataEncoder().encode({}),
     programAddress,
   } as VerifyIdentityInstruction<
     TProgramAddress,
     TAccountIdentity,
-    TAccountOwner
+    TAccountOwner,
+    TAccountConfig,
+    TAccountAdmin
   >);
 }
 
@@ -210,6 +273,8 @@ export type ParsedVerifyIdentityInstruction<
   accounts: {
     identity: TAccountMetas[0];
     owner: TAccountMetas[1];
+    config: TAccountMetas[2];
+    admin: TAccountMetas[3];
   };
   data: VerifyIdentityInstructionData;
 };
@@ -222,7 +287,7 @@ export function parseVerifyIdentityInstruction<
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
 ): ParsedVerifyIdentityInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 2) {
+  if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -234,7 +299,12 @@ export function parseVerifyIdentityInstruction<
   };
   return {
     programAddress: instruction.programAddress,
-    accounts: { identity: getNextAccount(), owner: getNextAccount() },
+    accounts: {
+      identity: getNextAccount(),
+      owner: getNextAccount(),
+      config: getNextAccount(),
+      admin: getNextAccount(),
+    },
     data: getVerifyIdentityInstructionDataDecoder().decode(instruction.data),
   };
 }

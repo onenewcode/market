@@ -1,113 +1,145 @@
 import { useWalletConnection, useSendTransaction } from "@solana/react-hooks";
 import { useState, useCallback, useEffect } from "react";
-import { 
-  getProgramDerivedAddress, 
-  getBytesEncoder, 
+import {
+  getProgramDerivedAddress,
+  getBytesEncoder,
   getAddressEncoder,
-  type Address
+  type Address,
 } from "@solana/kit";
-import { 
-  IDENTITY_SCORE_PROGRAM_ADDRESS, 
-  SYSTEM_PROGRAM_ADDRESS, 
-  rpc, 
-  SEEDS 
+import {
+  IDENTITY_SCORE_PROGRAM_ADDRESS,
+  SYSTEM_PROGRAM_ADDRESS,
+  rpc,
+  SEEDS,
 } from "../config";
-import { 
-  getCreateIdentityInstructionDataEncoder 
-} from "../generated/instructions/createIdentity";
-import { 
+import { getCreateIdentityInstructionDataEncoder } from "../generated/instructions/createIdentity";
+import { getVerifyIdentityInstructionDataEncoder } from "../generated/instructions/verifyIdentity";
+import {
   fetchMaybeIdentityAccount,
-  type IdentityAccount
+  type IdentityAccount,
 } from "../generated/accounts/identityAccount";
 
 export function useIdentity() {
-    const { wallet, status } = useWalletConnection();
-    const { send } = useSendTransaction();
-    
-    const [identity, setIdentity] = useState<IdentityAccount | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [creating, setCreating] = useState(false);
-    const [exists, setExists] = useState(false);
+  const { wallet, status } = useWalletConnection();
+  const { send } = useSendTransaction();
 
-    const getIdentityPda = useCallback(async (walletAddress: Address) => {
-        const encoder = new TextEncoder();
-        const [pda] = await getProgramDerivedAddress({
-            programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
-            seeds: [
-                getBytesEncoder().encode(encoder.encode(SEEDS.IDENTITY)),
-                getAddressEncoder().encode(walletAddress),
-            ],
-        });
-        return pda;
-    }, []);
+  const [identity, setIdentity] = useState<IdentityAccount | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const [exists, setExists] = useState(false);
 
-    const fetchIdentity = useCallback(async () => {
-        if (!wallet || status !== "connected") return;
-        
-        setLoading(true);
-        try {
-            const walletAddress = wallet.account.address;
-            const pda = await getIdentityPda(walletAddress);
-            const account = await fetchMaybeIdentityAccount(rpc, pda);
-            
-            if (account.exists) {
-                setIdentity(account.data);
-                setExists(true);
-            } else {
-                setIdentity(null);
-                setExists(false);
-            }
-        } catch (e) {
-            console.error("Failed to fetch identity:", e);
-            setIdentity(null);
-            setExists(false);
-        } finally {
-            setLoading(false);
-        }
-    }, [wallet, status, getIdentityPda]);
+  const getIdentityPda = useCallback(async (walletAddress: Address) => {
+    const encoder = new TextEncoder();
+    const [pda] = await getProgramDerivedAddress({
+      programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
+      seeds: [
+        getBytesEncoder().encode(encoder.encode(SEEDS.IDENTITY)),
+        getAddressEncoder().encode(walletAddress),
+      ],
+    });
+    return pda;
+  }, []);
 
-    // Initial fetch
-    useEffect(() => {
-        fetchIdentity();
-    }, [fetchIdentity]);
+  const fetchIdentity = useCallback(async () => {
+    if (!wallet || status !== "connected") return;
 
-    const createIdentity = useCallback(async () => {
-        if (!wallet) throw new Error("Wallet not connected");
+    setLoading(true);
+    try {
+      const walletAddress = wallet.account.address;
+      const pda = await getIdentityPda(walletAddress);
+      const account = await fetchMaybeIdentityAccount(rpc, pda);
 
-        setCreating(true);
-        try {
-            const walletAddress = wallet.account.address;
-            const pda = await getIdentityPda(walletAddress);
+      if (account.exists) {
+        setIdentity(account.data);
+        setExists(true);
+      } else {
+        setIdentity(null);
+        setExists(false);
+      }
+    } catch (e) {
+      console.error("Failed to fetch identity:", e);
+      setIdentity(null);
+      setExists(false);
+    } finally {
+      setLoading(false);
+    }
+  }, [wallet, status, getIdentityPda]);
 
-            const instruction = {
-                programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
-                accounts: [
-                    { address: pda, role: 1 }, // Writable
-                    { address: walletAddress, role: 3 }, // WritableSigner
-                    { address: SYSTEM_PROGRAM_ADDRESS, role: 0 }, // Readonly
-                ],
-                data: getCreateIdentityInstructionDataEncoder().encode({}),
-            };
+  // Initial fetch
+  useEffect(() => {
+    fetchIdentity();
+  }, [fetchIdentity]);
 
-            await send({ instructions: [instruction] });
-            
-            // Refresh identity after creation
-            await fetchIdentity();
-            return true;
-        } catch (error) {
-            console.error("Failed to create identity:", error);
-            throw error;
-        } finally {
-            setCreating(false);
-        }
-    }, [wallet, getIdentityPda, send, fetchIdentity]);
+  const createIdentity = useCallback(async () => {
+    if (!wallet) throw new Error("Wallet not connected");
 
-    return {
-        identity,
-        loading,
-        creating,
-        exists,
-        createIdentity,
-        refresh: fetchIdentity,
-    };
+    setCreating(true);
+    try {
+      const walletAddress = wallet.account.address;
+      const pda = await getIdentityPda(walletAddress);
+
+      const instruction = {
+        programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
+        accounts: [
+          { address: pda, role: 1 }, // Writable
+          { address: walletAddress, role: 3 }, // WritableSigner
+          { address: SYSTEM_PROGRAM_ADDRESS, role: 0 }, // Readonly
+        ],
+        data: getCreateIdentityInstructionDataEncoder().encode({}),
+      };
+
+      await send({ instructions: [instruction] });
+
+      // Refresh identity after creation
+      await fetchIdentity();
+      return true;
+    } catch (error) {
+      console.error("Failed to create identity:", error);
+      throw error;
+    } finally {
+      setCreating(false);
+    }
+  }, [wallet, getIdentityPda, send, fetchIdentity]);
+
+  const verifyIdentity = useCallback(async () => {
+    if (!wallet) throw new Error("Wallet not connected");
+
+    setVerifying(true);
+    try {
+      const walletAddress = wallet.account.address;
+      const pda = await getIdentityPda(walletAddress);
+
+      const instruction = {
+        programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
+        accounts: [
+          { address: pda, role: 1 }, // Writable
+          { address: walletAddress, role: 3 }, // WritableSigner
+        ],
+        data: getVerifyIdentityInstructionDataEncoder().encode({}),
+      };
+
+      await send({ instructions: [instruction] });
+
+      // Refresh identity after verification
+      await fetchIdentity();
+      return true;
+    } catch (error) {
+      console.error("Failed to verify identity:", error);
+      throw error;
+    } finally {
+      setVerifying(false);
+    }
+  }, [wallet, getIdentityPda, send, fetchIdentity]);
+
+  return {
+    identity,
+    loading,
+    creating,
+    verifying,
+    exists,
+    createIdentity,
+    verifyIdentity,
+    refresh: fetchIdentity,
+  };
 }

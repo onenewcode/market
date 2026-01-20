@@ -6,13 +6,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
 }
 
-export function Button({ 
-  children, 
-  className = "", 
-  variant = "primary", 
-  isLoading, 
+export function Button({
+  children,
+  className = "",
+  variant = "primary",
+  isLoading,
   disabled,
-  ...props 
+  ...props
 }: ButtonProps) {
   const style = theme.button.variants[variant] || theme.button.variants.primary;
 
