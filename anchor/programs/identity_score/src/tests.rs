@@ -3,7 +3,7 @@ mod tests {
     use crate::constants::{SEED_IDENTITY, SEED_SCORE};
     use crate::state::{CreditScoreAccount, IdentityAccount, ScoreLevel};
     use crate::ID as PROGRAM_ID;
-    use anchor_lang::{AccountDeserialize, AnchorSerialize};
+    use anchor_lang::AccountDeserialize;
     use litesvm::LiteSVM;
     use solana_sdk::{
         hash::hash,
@@ -11,9 +11,9 @@ mod tests {
         pubkey::Pubkey,
         signature::Keypair,
         signer::Signer,
-        system_program,
         transaction::Transaction,
     };
+    use solana_system_interface::program;
 
     const LAMPORTS_PER_SOL: u64 = 1_000_000_000;
 
@@ -44,7 +44,7 @@ mod tests {
             accounts: vec![
                 AccountMeta::new(*identity, false), // new(pubkey, is_signer) creates writable account
                 AccountMeta::new(*owner, true),
-                AccountMeta::new_readonly(system_program::ID, false),
+                AccountMeta::new_readonly(Pubkey::from(program::id().to_bytes()), false),
             ],
             data,
         }
@@ -85,7 +85,7 @@ mod tests {
                 AccountMeta::new(*score_account, false),
                 AccountMeta::new(*identity, false),
                 AccountMeta::new(*owner, true),
-                AccountMeta::new_readonly(system_program::ID, false),
+                AccountMeta::new_readonly(Pubkey::from(program::id().to_bytes()), false),
             ],
             data,
         }
@@ -127,7 +127,7 @@ mod tests {
                 AccountMeta::new(*identity, false),
                 AccountMeta::new(*score_account, false),
                 AccountMeta::new(*owner, true),
-                AccountMeta::new_readonly(system_program::ID, false),
+                AccountMeta::new_readonly(Pubkey::from(program::id().to_bytes()), false),
             ],
             data,
         }
@@ -147,7 +147,7 @@ mod tests {
                 AccountMeta::new(*score_account, false),
                 AccountMeta::new(*identity, false),
                 AccountMeta::new(*owner, true),
-                AccountMeta::new_readonly(system_program::ID, false),
+                AccountMeta::new_readonly(Pubkey::from(program::id().to_bytes()), false),
             ],
             data,
         }

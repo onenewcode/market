@@ -23,7 +23,7 @@ anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 [dev-dependencies]
 litesvm = "=0.7.1"
 solana-sdk = "2.3"
-
+solana-system-interface = "3.0.0"
 
 
 
