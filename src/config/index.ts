@@ -13,3 +13,5 @@ export const SEEDS = {
   IDENTITY: "identity",
   SCORE: "score",
 };
+
+export const ADMIN_ADDRESS = "GwYt3KwZFqD6vAWUucgfNcnjmRTZehebYrfkjm3BnpEy";
