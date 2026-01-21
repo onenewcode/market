@@ -13,9 +13,11 @@ import {
 import { useCreditScore } from "./hooks/useCreditScore";
 import { ScoreLevel } from "./generated/types/scoreLevel";
 import { theme } from "./styles/theme";
+import { useAlert } from "./hooks/useAlert";
 
 export function CreditScorePage() {
   const { scoreData, calculating, calculateScore, deleteScore, deleting } = useCreditScore();
+  const { showAlert } = useAlert();
 
   // Search state
   const [searchAddress, setSearchAddress] = useState("");
@@ -34,11 +36,17 @@ export function CreditScorePage() {
       const errorMsg = e instanceof Error ? e.message : String(e);
       // Special handling for identity verification error
       if (errorMsg.includes("Identity not verified")) {
-        alert(
-          "Please verify your identity first before calculating your credit score."
+        showAlert(
+          "Verification Required",
+          "Please verify your identity first before calculating your credit score.",
+          { variant: "warning" }
         );
       } else {
-        alert("Failed to calculate score: " + errorMsg);
+        showAlert(
+          "Calculation Failed",
+          `Failed to calculate score: ${errorMsg}`,
+          { variant: "error" }
+        );
       }
     } finally {
       const ms = performance.now() - t0;
@@ -50,14 +58,33 @@ export function CreditScorePage() {
   };
 
   const handleDeleteScore = async () => {
-    if (window.confirm("Are you sure you want to delete your credit score? This action cannot be undone.") && scoreData) {
-      try {
-        await deleteScore();
-      } catch (error) {
-        console.error("Failed to delete score:", error);
-        alert("Failed to delete score. Please try again.");
+    showAlert(
+      "Delete Score",
+      "Are you sure you want to delete your credit score? This action cannot be undone.",
+      {
+        variant: "warning",
+        showCancel: true,
+        onConfirm: async () => {
+          if (scoreData) {
+            try {
+              await deleteScore();
+              showAlert(
+                "Score Deleted",
+                "Your credit score has been successfully deleted.",
+                { variant: "success" }
+              );
+            } catch (error) {
+              console.error("Failed to delete score:", error);
+              showAlert(
+                "Deletion Failed",
+                "Failed to delete score. Please try again.",
+                { variant: "error" }
+              );
+            }
+          }
+        },
       }
-    }
+    );
   };
 
   const handleSearch = async () => {

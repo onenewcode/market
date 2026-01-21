@@ -1,6 +1,7 @@
 import { useWalletConnection, useBalance } from "@solana/react-hooks";
 import { useState, useEffect } from "react";
 import { useIdentity } from "./hooks/useIdentity";
+import { useAlert } from "./hooks/useAlert";
 import { rpc } from "./config";
 import { theme } from "./styles/theme";
 
@@ -9,8 +10,7 @@ export function AuthPage({
 }: {
   onNavigate: (page: string) => void;
 }) {
-  const { connectors, connect, disconnect, status, wallet } =
-    useWalletConnection();
+  const { connectors, connect, disconnect, status, wallet } = useWalletConnection();
   const balance = useBalance(wallet?.account.address);
   const {
     createIdentity,
@@ -18,6 +18,7 @@ export function AuthPage({
     loading: identityLoading,
     creating,
   } = useIdentity();
+  const { showAlert } = useAlert();
 
   const [rpcConnectionStatus, setRpcConnectionStatus] = useState<
     "ok" | "error" | "checking"
@@ -46,10 +47,18 @@ export function AuthPage({
       console.error(error);
       const msg = error instanceof Error ? error.message : String(error);
       if (msg.includes("already in use")) {
-        alert("Identity already exists! Redirecting...");
+        showAlert(
+          "Identity Exists",
+          "Identity already exists! Redirecting...",
+          { variant: "warning" }
+        );
         onNavigate("identity");
       } else {
-        alert("Failed to create identity: " + msg);
+        showAlert(
+          "Creation Failed",
+          `Failed to create identity: ${msg}`,
+          { variant: "error" }
+        );
       }
     }
   };
@@ -137,7 +146,9 @@ export function AuthPage({
 
         <div className="text-xs text-muted pt-4 border-t border-border-low mt-4 flex flex-col gap-2 items-center">
           <p>
-            Make sure your wallet is connected to <strong>Localnet</strong>{" "}
+            Make sure your wallet is connected to <strong>Localnet</strong>{
+              " "
+            }
             (localhost:8899).
           </p>
           <div className="flex items-center gap-2">
@@ -145,7 +156,9 @@ export function AuthPage({
               className={`${theme.status.badge} ${rpcConnectionStatus === "ok" ? theme.status.verified : rpcConnectionStatus === "error" ? theme.status.error : theme.status.unverified}`}
             ></div>
             <span>
-              RPC Connection:{" "}
+              RPC Connection:{
+                " "
+              }
               {rpcConnectionStatus === "ok"
                 ? "Connected (8899)"
                 : rpcConnectionStatus === "error"
@@ -172,7 +185,6 @@ export function AuthPage({
       <div className={theme.layout.gridConnectors}>
         {connectors.map((connector) => (
           <button
-
             key={connector.id}
             onClick={() => connect(connector.id)}
             className={theme.button.variants.connector}

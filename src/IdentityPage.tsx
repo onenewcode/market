@@ -1,6 +1,7 @@
 import { useWalletConnection } from "@solana/react-hooks";
 import { useIdentity } from "./hooks/useIdentity";
 import { theme } from "./styles/theme";
+import { useAlert } from "./hooks/useAlert";
 
 export function IdentityPage() {
   const { wallet } = useWalletConnection();
@@ -14,31 +15,66 @@ export function IdentityPage() {
     deleteIdentity,
     deleting,
   } = useIdentity();
+  const { showAlert } = useAlert();
 
   if (!wallet) return <div>Please connect your wallet.</div>;
   if (loading) return <div>Loading identity...</div>;
   if (!identity) return <div>No identity found. Please create one.</div>;
 
   const handleDeleteIdentity = async () => {
-    if (window.confirm("Are you sure you want to delete your identity? This action cannot be undone.") && wallet) {
-      try {
-        await deleteIdentity();
-      } catch (error) {
-        console.error("Failed to delete identity:", error);
-        alert("Failed to delete identity. Please try again.");
+    showAlert(
+      "Delete Identity",
+      "Are you sure you want to delete your identity? This action cannot be undone.",
+      {
+        variant: "warning",
+        showCancel: true,
+        onConfirm: async () => {
+          try {
+            await deleteIdentity();
+            showAlert(
+              "Identity Deleted",
+              "Your identity has been successfully deleted.",
+              { variant: "success" }
+            );
+          } catch (error) {
+            console.error("Failed to delete identity:", error);
+            showAlert(
+              "Deletion Failed",
+              "Failed to delete identity. Please try again.",
+              { variant: "error" }
+            );
+          }
+        },
       }
-    }
+    );
   };
 
   const handleUnverifyIdentity = async () => {
-    if (window.confirm("Are you sure you want to unverify your identity?") && wallet) {
-      try {
-        await unverifyIdentity();
-      } catch (error) {
-        console.error("Failed to unverify identity:", error);
-        alert("Failed to unverify identity. Please try again.");
+    showAlert(
+      "Unverify Identity",
+      "Are you sure you want to unverify your identity?",
+      {
+        variant: "warning",
+        showCancel: true,
+        onConfirm: async () => {
+          try {
+            await unverifyIdentity();
+            showAlert(
+              "Identity Unverified",
+              "Your identity has been successfully unverified.",
+              { variant: "success" }
+            );
+          } catch (error) {
+            console.error("Failed to unverify identity:", error);
+            showAlert(
+              "Unverify Failed",
+              "Failed to unverify identity. Please try again.",
+              { variant: "error" }
+            );
+          }
+        },
       }
-    }
+    );
   };
 
   return (

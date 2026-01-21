@@ -37,6 +37,10 @@ export const theme = {
         "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-6 py-2",
       danger:
         "bg-red-500 text-white hover:bg-red-600 px-6 py-2",
+      success:
+        "bg-green-500 text-white hover:bg-green-600 px-6 py-2",
+      warning:
+        "bg-yellow-500 text-white hover:bg-yellow-600 px-6 py-2",
       outline:
         "border border-border-low hover:bg-muted/10 bg-transparent px-6 py-2",
       ghost:
@@ -56,11 +60,23 @@ export const theme = {
     base: "rounded-lg border border-border-low bg-card px-4 py-2.5 text-sm outline-none transition-colors placeholder:text-muted focus:border-foreground/30 disabled:cursor-not-allowed disabled:opacity-60 w-full",
   },
 
+  // Modal Styles
+  modal: {
+    overlay: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm",
+    container: "bg-card border border-border-low rounded-xl shadow-lg p-6 max-w-md w-full mx-4",
+    header: "flex justify-between items-start mb-4",
+    title: "text-xl font-semibold text-foreground",
+    content: "mb-6 text-muted",
+    footer: "flex justify-end gap-3",
+    closeButton: "text-muted hover:text-foreground transition-colors",
+  },
+
   alert: {
     base: "p-3 rounded-lg text-sm border",
     warning:
       "bg-yellow-500/10 text-yellow-600 border-yellow-500/20 dark:text-yellow-400",
     error: "bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400",
+    success: "bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400",
   },
 
   status: {
