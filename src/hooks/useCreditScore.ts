@@ -161,9 +161,7 @@ export function useCreditScore() {
           { address: walletAddress, role: 3 }, // WritableSigner
           { address: SYSTEM_PROGRAM_ADDRESS, role: 0 }, // Readonly
         ],
-        data: new Uint8Array(
-          getDeleteScoreInstructionDataEncoder().encode({})
-        ),
+        data: new Uint8Array(getDeleteScoreInstructionDataEncoder().encode({})),
       };
 
       await send({ instructions: [instruction] });

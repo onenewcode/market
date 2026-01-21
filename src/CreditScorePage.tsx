@@ -16,7 +16,8 @@ import { theme } from "./styles/theme";
 import { useAlert } from "./hooks/useAlert";
 
 export function CreditScorePage() {
-  const { scoreData, calculating, calculateScore, deleteScore, deleting } = useCreditScore();
+  const { scoreData, calculating, calculateScore, deleteScore, deleting } =
+    useCreditScore();
   const { showAlert } = useAlert();
 
   // Search state

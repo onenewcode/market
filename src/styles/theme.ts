@@ -35,12 +35,9 @@ export const theme = {
         "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm px-6 py-2",
       secondary:
         "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-6 py-2",
-      danger:
-        "bg-red-500 text-white hover:bg-red-600 px-6 py-2",
-      success:
-        "bg-green-500 text-white hover:bg-green-600 px-6 py-2",
-      warning:
-        "bg-yellow-500 text-white hover:bg-yellow-600 px-6 py-2",
+      danger: "bg-red-500 text-white hover:bg-red-600 px-6 py-2",
+      success: "bg-green-500 text-white hover:bg-green-600 px-6 py-2",
+      warning: "bg-yellow-500 text-white hover:bg-yellow-600 px-6 py-2",
       outline:
         "border border-border-low hover:bg-muted/10 bg-transparent px-6 py-2",
       ghost:
@@ -62,8 +59,10 @@ export const theme = {
 
   // Modal Styles
   modal: {
-    overlay: "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm",
-    container: "bg-card border border-border-low rounded-xl shadow-lg p-6 max-w-md w-full mx-4",
+    overlay:
+      "fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm",
+    container:
+      "bg-card border border-border-low rounded-xl shadow-lg p-6 max-w-md w-full mx-4",
     header: "flex justify-between items-start mb-4",
     title: "text-xl font-semibold text-foreground",
     content: "mb-6 text-muted",
@@ -76,7 +75,8 @@ export const theme = {
     warning:
       "bg-yellow-500/10 text-yellow-600 border-yellow-500/20 dark:text-yellow-400",
     error: "bg-red-500/10 text-red-600 border-red-500/20 dark:text-red-400",
-    success: "bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400",
+    success:
+      "bg-green-500/10 text-green-600 border-green-500/20 dark:text-green-400",
   },
 
   status: {

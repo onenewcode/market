@@ -10,7 +10,8 @@ export function AuthPage({
 }: {
   onNavigate: (page: string) => void;
 }) {
-  const { connectors, connect, disconnect, status, wallet } = useWalletConnection();
+  const { connectors, connect, disconnect, status, wallet } =
+    useWalletConnection();
   const balance = useBalance(wallet?.account.address);
   const {
     createIdentity,
@@ -54,11 +55,9 @@ export function AuthPage({
         );
         onNavigate("identity");
       } else {
-        showAlert(
-          "Creation Failed",
-          `Failed to create identity: ${msg}`,
-          { variant: "error" }
-        );
+        showAlert("Creation Failed", `Failed to create identity: ${msg}`, {
+          variant: "error",
+        });
       }
     }
   };
@@ -146,9 +145,7 @@ export function AuthPage({
 
         <div className="text-xs text-muted pt-4 border-t border-border-low mt-4 flex flex-col gap-2 items-center">
           <p>
-            Make sure your wallet is connected to <strong>Localnet</strong>{
-              " "
-            }
+            Make sure your wallet is connected to <strong>Localnet</strong>{" "}
             (localhost:8899).
           </p>
           <div className="flex items-center gap-2">
@@ -156,9 +153,7 @@ export function AuthPage({
               className={`${theme.status.badge} ${rpcConnectionStatus === "ok" ? theme.status.verified : rpcConnectionStatus === "error" ? theme.status.error : theme.status.unverified}`}
             ></div>
             <span>
-              RPC Connection:{
-                " "
-              }
+              RPC Connection:{" "}
               {rpcConnectionStatus === "ok"
                 ? "Connected (8899)"
                 : rpcConnectionStatus === "error"

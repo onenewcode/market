@@ -108,7 +108,11 @@ mod tests {
         }
     }
 
-    fn delete_identity_ix(owner: &Pubkey, identity: &Pubkey, score_account: &Pubkey) -> Instruction {
+    fn delete_identity_ix(
+        owner: &Pubkey,
+        identity: &Pubkey,
+        score_account: &Pubkey,
+    ) -> Instruction {
         let discriminator = get_discriminator("delete_identity");
         let (_, identity_bump) = get_identity_pda(owner);
         let (_, score_bump) = get_score_pda(owner);
@@ -651,7 +655,8 @@ mod tests {
         let user = Keypair::new();
         let hacker = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
-        svm.airdrop(&hacker.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+        svm.airdrop(&hacker.pubkey(), 10 * LAMPORTS_PER_SOL)
+            .unwrap();
 
         let (identity_pda, _) = get_identity_pda(&user.pubkey());
         let (score_pda, _) = get_score_pda(&user.pubkey());

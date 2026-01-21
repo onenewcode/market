@@ -161,10 +161,10 @@ npm run dev
 - `npm run format`: 使用 Prettier 格式化代码。
 - `npm run format:check`: 检查代码格式是否符合 Prettier 规范。
 - `npm run preview`: 预览生产构建版本。
-- `npm run ci`: 执行 CI 检查（构建 +  lint + 格式检查）。
+- `npm run ci`: 执行 CI 检查（构建 + lint + 格式检查）。
 
 ## 🤝 贡献 (Contributing)
 
 欢迎提交 Issue 和 Pull Request 来改进本项目！
 
->npx tsc --noEmit
+> npx tsc --noEmit

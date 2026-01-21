@@ -1,4 +1,10 @@
-import { useState, useCallback, createContext, useContext, ReactNode } from "react";
+import {
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  ReactNode,
+} from "react";
 import { theme } from "./../styles/theme";
 
 interface AlertContextType {
@@ -157,10 +163,7 @@ function AlertModal({
       <div className={`${theme.modal.container} ${getAlertClass()}`}>
         <div className={theme.modal.header}>
           <h3 className={theme.modal.title}>{title}</h3>
-          <button
-            onClick={onClose}
-            className={theme.modal.closeButton}
-          >
+          <button onClick={onClose} className={theme.modal.closeButton}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               width="24"
@@ -180,17 +183,11 @@ function AlertModal({
         <div className={theme.modal.content}>{message}</div>
         <div className={theme.modal.footer}>
           {showCancel && (
-            <button
-              onClick={onClose}
-              className={cancelButtonClass}
-            >
+            <button onClick={onClose} className={cancelButtonClass}>
               {cancelText}
             </button>
           )}
-          <button
-            onClick={onConfirm}
-            className={confirmButtonClass}
-          >
+          <button onClick={onConfirm} className={confirmButtonClass}>
             {confirmText}
           </button>
         </div>
