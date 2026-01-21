@@ -9,11 +9,37 @@ export function IdentityPage() {
     loading,
     verifyIdentity,
     verifying,
+    unverifyIdentity,
+    unverifying,
+    deleteIdentity,
+    deleting,
   } = useIdentity();
 
   if (!wallet) return <div>Please connect your wallet.</div>;
   if (loading) return <div>Loading identity...</div>;
   if (!identity) return <div>No identity found. Please create one.</div>;
+
+  const handleDeleteIdentity = async () => {
+    if (window.confirm("Are you sure you want to delete your identity? This action cannot be undone.") && wallet) {
+      try {
+        await deleteIdentity();
+      } catch (error) {
+        console.error("Failed to delete identity:", error);
+        alert("Failed to delete identity. Please try again.");
+      }
+    }
+  };
+
+  const handleUnverifyIdentity = async () => {
+    if (window.confirm("Are you sure you want to unverify your identity?") && wallet) {
+      try {
+        await unverifyIdentity();
+      } catch (error) {
+        console.error("Failed to unverify identity:", error);
+        alert("Failed to unverify identity. Please try again.");
+      }
+    }
+  };
 
   return (
     <div className={theme.layout.pageContainer}>
@@ -47,7 +73,7 @@ export function IdentityPage() {
               </p>
             </div>
           )}
-          <div className="pt-4 border-t border-gray-200">
+          <div className="pt-4 border-t border-gray-200 space-y-3">
             {!identity.verified ? (
               <button
                 className={`${theme.button.base} ${theme.button.variants.primary}`}
@@ -57,10 +83,26 @@ export function IdentityPage() {
                 {verifying ? "Verifying..." : "Verify Identity"}
               </button>
             ) : (
-              <p className="text-sm text-muted">
-                Identity verification is currently permanent. Unverify functionality will be available in a future update.
-              </p>
+              <div className="space-y-3">
+                <button
+                  className={`${theme.button.base} ${theme.button.variants.secondary}`}
+                  onClick={handleUnverifyIdentity}
+                  disabled={unverifying}
+                >
+                  {unverifying ? "Unverifying..." : "Unverify Identity"}
+                </button>
+                <p className="text-sm text-muted">
+                  You can unverify or delete your identity at any time.
+                </p>
+              </div>
             )}
+            <button
+              className={`${theme.button.base} ${theme.button.variants.danger}`}
+              onClick={handleDeleteIdentity}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting..." : "Delete Identity"}
+            </button>
           </div>
         </div>
       </div>

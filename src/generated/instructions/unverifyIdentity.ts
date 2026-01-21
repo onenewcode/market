@@ -38,17 +38,17 @@ import {
   type ResolvedAccount,
 } from "../shared";
 
-export const VERIFY_IDENTITY_DISCRIMINATOR = new Uint8Array([
-  177, 162, 9, 111, 44, 84, 80, 21,
+export const UNVERIFY_IDENTITY_DISCRIMINATOR = new Uint8Array([
+  226, 88, 104, 49, 250, 2, 114, 24,
 ]);
 
-export function getVerifyIdentityDiscriminatorBytes() {
+export function getUnverifyIdentityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    VERIFY_IDENTITY_DISCRIMINATOR,
+    UNVERIFY_IDENTITY_DISCRIMINATOR,
   );
 }
 
-export type VerifyIdentityInstruction<
+export type UnverifyIdentityInstruction<
   TProgram extends string = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
   TAccountIdentity extends string | AccountMeta<string> = string,
   TAccountOwner extends string | AccountMeta<string> = string,
@@ -68,36 +68,36 @@ export type VerifyIdentityInstruction<
     ]
   >;
 
-export type VerifyIdentityInstructionData = {
+export type UnverifyIdentityInstructionData = {
   discriminator: ReadonlyUint8Array;
 };
 
-export type VerifyIdentityInstructionDataArgs = {};
+export type UnverifyIdentityInstructionDataArgs = {};
 
-export function getVerifyIdentityInstructionDataEncoder(): FixedSizeEncoder<VerifyIdentityInstructionDataArgs> {
+export function getUnverifyIdentityInstructionDataEncoder(): FixedSizeEncoder<UnverifyIdentityInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: VERIFY_IDENTITY_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: UNVERIFY_IDENTITY_DISCRIMINATOR }),
   );
 }
 
-export function getVerifyIdentityInstructionDataDecoder(): FixedSizeDecoder<VerifyIdentityInstructionData> {
+export function getUnverifyIdentityInstructionDataDecoder(): FixedSizeDecoder<UnverifyIdentityInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getVerifyIdentityInstructionDataCodec(): FixedSizeCodec<
-  VerifyIdentityInstructionDataArgs,
-  VerifyIdentityInstructionData
+export function getUnverifyIdentityInstructionDataCodec(): FixedSizeCodec<
+  UnverifyIdentityInstructionDataArgs,
+  UnverifyIdentityInstructionData
 > {
   return combineCodec(
-    getVerifyIdentityInstructionDataEncoder(),
-    getVerifyIdentityInstructionDataDecoder(),
+    getUnverifyIdentityInstructionDataEncoder(),
+    getUnverifyIdentityInstructionDataDecoder(),
   );
 }
 
-export type VerifyIdentityAsyncInput<
+export type UnverifyIdentityAsyncInput<
   TAccountIdentity extends string = string,
   TAccountOwner extends string = string,
 > = {
@@ -105,15 +105,15 @@ export type VerifyIdentityAsyncInput<
   owner: TransactionSigner<TAccountOwner>;
 };
 
-export async function getVerifyIdentityInstructionAsync<
+export async function getUnverifyIdentityInstructionAsync<
   TAccountIdentity extends string,
   TAccountOwner extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: VerifyIdentityAsyncInput<TAccountIdentity, TAccountOwner>,
+  input: UnverifyIdentityAsyncInput<TAccountIdentity, TAccountOwner>,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  VerifyIdentityInstruction<TProgramAddress, TAccountIdentity, TAccountOwner>
+  UnverifyIdentityInstruction<TProgramAddress, TAccountIdentity, TAccountOwner>
 > {
   // Program address.
   const programAddress =
@@ -148,16 +148,16 @@ export async function getVerifyIdentityInstructionAsync<
       getAccountMeta(accounts.identity),
       getAccountMeta(accounts.owner),
     ],
-    data: getVerifyIdentityInstructionDataEncoder().encode({}),
+    data: getUnverifyIdentityInstructionDataEncoder().encode({}),
     programAddress,
-  } as VerifyIdentityInstruction<
+  } as UnverifyIdentityInstruction<
     TProgramAddress,
     TAccountIdentity,
     TAccountOwner
   >);
 }
 
-export type VerifyIdentityInput<
+export type UnverifyIdentityInput<
   TAccountIdentity extends string = string,
   TAccountOwner extends string = string,
 > = {
@@ -165,14 +165,18 @@ export type VerifyIdentityInput<
   owner: TransactionSigner<TAccountOwner>;
 };
 
-export function getVerifyIdentityInstruction<
+export function getUnverifyIdentityInstruction<
   TAccountIdentity extends string,
   TAccountOwner extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: VerifyIdentityInput<TAccountIdentity, TAccountOwner>,
+  input: UnverifyIdentityInput<TAccountIdentity, TAccountOwner>,
   config?: { programAddress?: TProgramAddress },
-): VerifyIdentityInstruction<TProgramAddress, TAccountIdentity, TAccountOwner> {
+): UnverifyIdentityInstruction<
+  TProgramAddress,
+  TAccountIdentity,
+  TAccountOwner
+> {
   // Program address.
   const programAddress =
     config?.programAddress ?? IDENTITY_SCORE_PROGRAM_ADDRESS;
@@ -193,16 +197,16 @@ export function getVerifyIdentityInstruction<
       getAccountMeta(accounts.identity),
       getAccountMeta(accounts.owner),
     ],
-    data: getVerifyIdentityInstructionDataEncoder().encode({}),
+    data: getUnverifyIdentityInstructionDataEncoder().encode({}),
     programAddress,
-  } as VerifyIdentityInstruction<
+  } as UnverifyIdentityInstruction<
     TProgramAddress,
     TAccountIdentity,
     TAccountOwner
   >);
 }
 
-export type ParsedVerifyIdentityInstruction<
+export type ParsedUnverifyIdentityInstruction<
   TProgram extends string = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
@@ -211,17 +215,17 @@ export type ParsedVerifyIdentityInstruction<
     identity: TAccountMetas[0];
     owner: TAccountMetas[1];
   };
-  data: VerifyIdentityInstructionData;
+  data: UnverifyIdentityInstructionData;
 };
 
-export function parseVerifyIdentityInstruction<
+export function parseUnverifyIdentityInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedVerifyIdentityInstruction<TProgram, TAccountMetas> {
+): ParsedUnverifyIdentityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 2) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
@@ -235,6 +239,6 @@ export function parseVerifyIdentityInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: { identity: getNextAccount(), owner: getNextAccount() },
-    data: getVerifyIdentityInstructionDataDecoder().decode(instruction.data),
+    data: getUnverifyIdentityInstructionDataDecoder().decode(instruction.data),
   };
 }

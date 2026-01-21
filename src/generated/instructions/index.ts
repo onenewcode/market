@@ -8,6 +8,7 @@
 
 export * from "./calculateScore";
 export * from "./createIdentity";
-export * from "./initialize";
-export * from "./migrateIdentity";
+export * from "./deleteIdentity";
+export * from "./deleteScore";
+export * from "./unverifyIdentity";
 export * from "./verifyIdentity";

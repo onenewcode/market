@@ -20,40 +20,40 @@ import {
   type FixedSizeEncoder,
 } from "@solana/kit";
 
-export type IdentityMigrated = {
-  oldOwner: Address;
-  newOwner: Address;
+export type IdentityUnverified = {
+  owner: Address;
+  identity: Address;
   timestamp: bigint;
 };
 
-export type IdentityMigratedArgs = {
-  oldOwner: Address;
-  newOwner: Address;
+export type IdentityUnverifiedArgs = {
+  owner: Address;
+  identity: Address;
   timestamp: number | bigint;
 };
 
-export function getIdentityMigratedEncoder(): FixedSizeEncoder<IdentityMigratedArgs> {
+export function getIdentityUnverifiedEncoder(): FixedSizeEncoder<IdentityUnverifiedArgs> {
   return getStructEncoder([
-    ["oldOwner", getAddressEncoder()],
-    ["newOwner", getAddressEncoder()],
+    ["owner", getAddressEncoder()],
+    ["identity", getAddressEncoder()],
     ["timestamp", getI64Encoder()],
   ]);
 }
 
-export function getIdentityMigratedDecoder(): FixedSizeDecoder<IdentityMigrated> {
+export function getIdentityUnverifiedDecoder(): FixedSizeDecoder<IdentityUnverified> {
   return getStructDecoder([
-    ["oldOwner", getAddressDecoder()],
-    ["newOwner", getAddressDecoder()],
+    ["owner", getAddressDecoder()],
+    ["identity", getAddressDecoder()],
     ["timestamp", getI64Decoder()],
   ]);
 }
 
-export function getIdentityMigratedCodec(): FixedSizeCodec<
-  IdentityMigratedArgs,
-  IdentityMigrated
+export function getIdentityUnverifiedCodec(): FixedSizeCodec<
+  IdentityUnverifiedArgs,
+  IdentityUnverified
 > {
   return combineCodec(
-    getIdentityMigratedEncoder(),
-    getIdentityMigratedDecoder(),
+    getIdentityUnverifiedEncoder(),
+    getIdentityUnverifiedDecoder(),
   );
 }

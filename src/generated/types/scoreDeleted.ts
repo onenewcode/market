@@ -14,63 +14,47 @@ import {
   getI64Encoder,
   getStructDecoder,
   getStructEncoder,
-  getU8Decoder,
-  getU8Encoder,
   type Address,
   type FixedSizeCodec,
   type FixedSizeDecoder,
   type FixedSizeEncoder,
 } from "@solana/kit";
-import {
-  getScoreLevelDecoder,
-  getScoreLevelEncoder,
-  type ScoreLevel,
-  type ScoreLevelArgs,
-} from ".";
 
-export type ScoreCalculated = {
+export type ScoreDeleted = {
   owner: Address;
   identity: Address;
   scoreAccount: Address;
-  score: number;
-  scoreLevel: ScoreLevel;
   timestamp: bigint;
 };
 
-export type ScoreCalculatedArgs = {
+export type ScoreDeletedArgs = {
   owner: Address;
   identity: Address;
   scoreAccount: Address;
-  score: number;
-  scoreLevel: ScoreLevelArgs;
   timestamp: number | bigint;
 };
 
-export function getScoreCalculatedEncoder(): FixedSizeEncoder<ScoreCalculatedArgs> {
+export function getScoreDeletedEncoder(): FixedSizeEncoder<ScoreDeletedArgs> {
   return getStructEncoder([
     ["owner", getAddressEncoder()],
     ["identity", getAddressEncoder()],
     ["scoreAccount", getAddressEncoder()],
-    ["score", getU8Encoder()],
-    ["scoreLevel", getScoreLevelEncoder()],
     ["timestamp", getI64Encoder()],
   ]);
 }
 
-export function getScoreCalculatedDecoder(): FixedSizeDecoder<ScoreCalculated> {
+export function getScoreDeletedDecoder(): FixedSizeDecoder<ScoreDeleted> {
   return getStructDecoder([
     ["owner", getAddressDecoder()],
     ["identity", getAddressDecoder()],
     ["scoreAccount", getAddressDecoder()],
-    ["score", getU8Decoder()],
-    ["scoreLevel", getScoreLevelDecoder()],
     ["timestamp", getI64Decoder()],
   ]);
 }
 
-export function getScoreCalculatedCodec(): FixedSizeCodec<
-  ScoreCalculatedArgs,
-  ScoreCalculated
+export function getScoreDeletedCodec(): FixedSizeCodec<
+  ScoreDeletedArgs,
+  ScoreDeleted
 > {
-  return combineCodec(getScoreCalculatedEncoder(), getScoreCalculatedDecoder());
+  return combineCodec(getScoreDeletedEncoder(), getScoreDeletedDecoder());
 }

@@ -16,12 +16,21 @@ import { IDENTITY_SCORE_PROGRAM_ADDRESS } from "../programs";
 
 /** Unauthorized: You are not authorized to perform this action. */
 export const IDENTITY_SCORE_ERROR__UNAUTHORIZED = 0x1770; // 6000
+/** IdentityNotVerified: The identity has not been verified. */
+export const IDENTITY_SCORE_ERROR__IDENTITY_NOT_VERIFIED = 0x1771; // 6001
+/** ScoreUpdateFailed: Failed to update the score. */
+export const IDENTITY_SCORE_ERROR__SCORE_UPDATE_FAILED = 0x1772; // 6002
 
-export type IdentityScoreError = typeof IDENTITY_SCORE_ERROR__UNAUTHORIZED;
+export type IdentityScoreError =
+  | typeof IDENTITY_SCORE_ERROR__IDENTITY_NOT_VERIFIED
+  | typeof IDENTITY_SCORE_ERROR__SCORE_UPDATE_FAILED
+  | typeof IDENTITY_SCORE_ERROR__UNAUTHORIZED;
 
 let identityScoreErrorMessages: Record<IdentityScoreError, string> | undefined;
 if (process.env.NODE_ENV !== "production") {
   identityScoreErrorMessages = {
+    [IDENTITY_SCORE_ERROR__IDENTITY_NOT_VERIFIED]: `The identity has not been verified.`,
+    [IDENTITY_SCORE_ERROR__SCORE_UPDATE_FAILED]: `Failed to update the score.`,
     [IDENTITY_SCORE_ERROR__UNAUTHORIZED]: `You are not authorized to perform this action.`,
   };
 }

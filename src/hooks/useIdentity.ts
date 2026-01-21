@@ -14,6 +14,8 @@ import {
 } from "../config";
 import { getCreateIdentityInstructionDataEncoder } from "../generated/instructions/createIdentity";
 import { getVerifyIdentityInstructionDataEncoder } from "../generated/instructions/verifyIdentity";
+import { getUnverifyIdentityInstructionDataEncoder } from "../generated/instructions/unverifyIdentity";
+import { getDeleteIdentityInstructionDataEncoder } from "../generated/instructions/deleteIdentity";
 import {
   fetchMaybeIdentityAccount,
   type IdentityAccount,
@@ -27,6 +29,8 @@ export function useIdentity() {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [verifying, setVerifying] = useState(false);
+  const [unverifying, setUnverifying] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [exists, setExists] = useState(false);
 
   const getIdentityPda = useCallback(async (walletAddress: Address) => {
@@ -35,6 +39,18 @@ export function useIdentity() {
       programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
       seeds: [
         getBytesEncoder().encode(encoder.encode(SEEDS.IDENTITY)),
+        getAddressEncoder().encode(walletAddress),
+      ],
+    });
+    return pda;
+  }, []);
+
+  const getScorePda = useCallback(async (walletAddress: Address) => {
+    const encoder = new TextEncoder();
+    const [pda] = await getProgramDerivedAddress({
+      programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
+      seeds: [
+        getBytesEncoder().encode(encoder.encode(SEEDS.SCORE)),
         getAddressEncoder().encode(walletAddress),
       ],
     });
@@ -132,14 +148,81 @@ export function useIdentity() {
     }
   }, [wallet, getIdentityPda, send, fetchIdentity]);
 
+  const unverifyIdentity = useCallback(async () => {
+    if (!wallet) throw new Error("Wallet not connected");
+
+    setUnverifying(true);
+    try {
+      const walletAddress = wallet.account.address;
+      const pda = await getIdentityPda(walletAddress);
+
+      const instruction = {
+        programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
+        accounts: [
+          { address: pda, role: 1 }, // Writable
+          { address: walletAddress, role: 3 }, // WritableSigner
+        ],
+        data: getUnverifyIdentityInstructionDataEncoder().encode({}),
+      };
+
+      await send({ instructions: [instruction] });
+
+      // Refresh identity after unverification
+      await fetchIdentity();
+      return true;
+    } catch (error) {
+      console.error("Failed to unverify identity:", error);
+      throw error;
+    } finally {
+      setUnverifying(false);
+    }
+  }, [wallet, getIdentityPda, send, fetchIdentity]);
+
+  const deleteIdentity = useCallback(async () => {
+    if (!wallet) throw new Error("Wallet not connected");
+
+    setDeleting(true);
+    try {
+      const walletAddress = wallet.account.address;
+      const identityPda = await getIdentityPda(walletAddress);
+      const scorePda = await getScorePda(walletAddress);
+
+      const instruction = {
+        programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
+        accounts: [
+          { address: identityPda, role: 1 }, // Writable
+          { address: scorePda, role: 1 }, // Writable
+          { address: walletAddress, role: 3 }, // WritableSigner
+          { address: SYSTEM_PROGRAM_ADDRESS, role: 0 }, // Readonly
+        ],
+        data: getDeleteIdentityInstructionDataEncoder().encode({}),
+      };
+
+      await send({ instructions: [instruction] });
+
+      // Refresh identity after deletion
+      await fetchIdentity();
+      return true;
+    } catch (error) {
+      console.error("Failed to delete identity:", error);
+      throw error;
+    } finally {
+      setDeleting(false);
+    }
+  }, [wallet, getIdentityPda, getScorePda, send, fetchIdentity]);
+
   return {
     identity,
     loading,
     creating,
     verifying,
+    unverifying,
+    deleting,
     exists,
     createIdentity,
     verifyIdentity,
+    unverifyIdentity,
+    deleteIdentity,
     refresh: fetchIdentity,
   };
 }

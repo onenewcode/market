@@ -172,6 +172,7 @@ export function AuthPage({
       <div className={theme.layout.gridConnectors}>
         {connectors.map((connector) => (
           <button
+
             key={connector.id}
             onClick={() => connect(connector.id)}
             className={theme.button.variants.connector}

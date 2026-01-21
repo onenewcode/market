@@ -6,6 +6,5 @@
  * @see https://github.com/codama-idl/codama
  */
 
-export * from "./configAccount";
 export * from "./creditScoreAccount";
 export * from "./identityAccount";

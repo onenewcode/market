@@ -16,8 +16,9 @@ import {
 import {
   type ParsedCalculateScoreInstruction,
   type ParsedCreateIdentityInstruction,
-  type ParsedInitializeInstruction,
-  type ParsedMigrateIdentityInstruction,
+  type ParsedDeleteIdentityInstruction,
+  type ParsedDeleteScoreInstruction,
+  type ParsedUnverifyIdentityInstruction,
   type ParsedVerifyIdentityInstruction,
 } from "../instructions";
 
@@ -25,7 +26,6 @@ export const IDENTITY_SCORE_PROGRAM_ADDRESS =
   "8qQcqDRpNQEWPjNz62XHooWKr61Ewd8DHj9j2RU1ePFs" as Address<"8qQcqDRpNQEWPjNz62XHooWKr61Ewd8DHj9j2RU1ePFs">;
 
 export enum IdentityScoreAccount {
-  ConfigAccount,
   CreditScoreAccount,
   IdentityAccount,
 }
@@ -34,17 +34,6 @@ export function identifyIdentityScoreAccount(
   account: { data: ReadonlyUint8Array } | ReadonlyUint8Array,
 ): IdentityScoreAccount {
   const data = "data" in account ? account.data : account;
-  if (
-    containsBytes(
-      data,
-      fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([189, 255, 97, 70, 186, 189, 24, 102]),
-      ),
-      0,
-    )
-  ) {
-    return IdentityScoreAccount.ConfigAccount;
-  }
   if (
     containsBytes(
       data,
@@ -75,8 +64,9 @@ export function identifyIdentityScoreAccount(
 export enum IdentityScoreInstruction {
   CalculateScore,
   CreateIdentity,
-  Initialize,
-  MigrateIdentity,
+  DeleteIdentity,
+  DeleteScore,
+  UnverifyIdentity,
   VerifyIdentity,
 }
 
@@ -110,23 +100,34 @@ export function identifyIdentityScoreInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([175, 175, 109, 31, 13, 152, 155, 237]),
+        new Uint8Array([154, 193, 133, 129, 20, 36, 147, 64]),
       ),
       0,
     )
   ) {
-    return IdentityScoreInstruction.Initialize;
+    return IdentityScoreInstruction.DeleteIdentity;
   }
   if (
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([161, 192, 70, 80, 47, 37, 26, 10]),
+        new Uint8Array([206, 156, 248, 88, 198, 76, 186, 126]),
       ),
       0,
     )
   ) {
-    return IdentityScoreInstruction.MigrateIdentity;
+    return IdentityScoreInstruction.DeleteScore;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([226, 88, 104, 49, 250, 2, 114, 24]),
+      ),
+      0,
+    )
+  ) {
+    return IdentityScoreInstruction.UnverifyIdentity;
   }
   if (
     containsBytes(
@@ -154,11 +155,14 @@ export type ParsedIdentityScoreInstruction<
       instructionType: IdentityScoreInstruction.CreateIdentity;
     } & ParsedCreateIdentityInstruction<TProgram>)
   | ({
-      instructionType: IdentityScoreInstruction.Initialize;
-    } & ParsedInitializeInstruction<TProgram>)
+      instructionType: IdentityScoreInstruction.DeleteIdentity;
+    } & ParsedDeleteIdentityInstruction<TProgram>)
   | ({
-      instructionType: IdentityScoreInstruction.MigrateIdentity;
-    } & ParsedMigrateIdentityInstruction<TProgram>)
+      instructionType: IdentityScoreInstruction.DeleteScore;
+    } & ParsedDeleteScoreInstruction<TProgram>)
+  | ({
+      instructionType: IdentityScoreInstruction.UnverifyIdentity;
+    } & ParsedUnverifyIdentityInstruction<TProgram>)
   | ({
       instructionType: IdentityScoreInstruction.VerifyIdentity;
     } & ParsedVerifyIdentityInstruction<TProgram>);

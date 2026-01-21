@@ -35,6 +35,8 @@ export const theme = {
         "bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm px-6 py-2",
       secondary:
         "bg-secondary text-secondary-foreground hover:bg-secondary/80 px-6 py-2",
+      danger:
+        "bg-red-500 text-white hover:bg-red-600 px-6 py-2",
       outline:
         "border border-border-low hover:bg-muted/10 bg-transparent px-6 py-2",
       ghost:

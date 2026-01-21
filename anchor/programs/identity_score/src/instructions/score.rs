@@ -50,6 +50,45 @@ pub fn calculate_score(ctx: Context<CalculateScore>) -> Result<()> {
     Ok(())
 }
 
+pub fn delete_score(ctx: Context<DeleteScore>) -> Result<()> {
+    let owner = &ctx.accounts.owner;
+    let identity = &ctx.accounts.identity;
+    let score_account = &mut ctx.accounts.score_account;
+    let timestamp = Clock::get()?.unix_timestamp;
+
+    // Verify score account address manually to allow uninitialized accounts
+    let (score_pda, _) = Pubkey::find_program_address(
+        &[SEED_SCORE, owner.key().as_ref()],
+        ctx.program_id,
+    );
+    require_keys_eq!(score_account.key(), score_pda, IdentityScoreError::Unauthorized);
+
+    // Only process if score account is initialized
+    if score_account.data_len() > 0 {
+        require_keys_eq!(*score_account.owner, *ctx.program_id, IdentityScoreError::Unauthorized);
+        // Deserialize score account to verify identity match
+        let mut data_slice = &score_account.data.borrow()[..];
+        let score_state = CreditScoreAccount::try_deserialize(&mut data_slice)?;
+        
+        // Verify score account belongs to this identity
+        require!(score_state.identity == identity.key(), crate::errors::IdentityScoreError::Unauthorized);
+        
+        // Transfer lamports from score account to owner
+        let score_lamports = score_account.lamports();
+        **score_account.lamports.borrow_mut() = 0;
+        **owner.to_account_info().lamports.borrow_mut() += score_lamports;
+    }
+
+    emit!(crate::events::ScoreDeleted {
+        owner: owner.key(),
+        identity: identity.key(),
+        score_account: score_account.key(),
+        timestamp,
+    });
+
+    Ok(())
+}
+
 #[derive(Accounts)]
 pub struct CalculateScore<'info> {
     #[account(
@@ -71,5 +110,25 @@ pub struct CalculateScore<'info> {
     #[account(mut)]
     pub owner: Signer<'info>,
 
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct DeleteScore<'info> {
+    /// CHECK: This is allowed to be uninitialized.
+    /// Address is verified via PDA seeds and additionally in the instruction body.
+    /// We only deserialize/process it when `data_len() > 0`.
+    #[account(mut)]
+    pub score_account: AccountInfo<'info>,
+
+    #[account(
+        seeds = [SEED_IDENTITY, owner.key().as_ref()],
+        bump,
+        has_one = owner,
+    )]
+    pub identity: Account<'info, IdentityAccount>,
+
+    #[account(mut)]
+    pub owner: Signer<'info>,
     pub system_program: Program<'info, System>,
 }

@@ -27,7 +27,15 @@ pub mod identity_score {
         instructions::identity::unverify_identity(ctx)
     }
 
+    pub fn delete_identity(ctx: Context<DeleteIdentity>) -> Result<()> {
+        instructions::identity::delete_identity(ctx)
+    }
+
     pub fn calculate_score(ctx: Context<CalculateScore>) -> Result<()> {
         instructions::score::calculate_score(ctx)
+    }
+
+    pub fn delete_score(ctx: Context<DeleteScore>) -> Result<()> {
+        instructions::score::delete_score(ctx)
     }
 }

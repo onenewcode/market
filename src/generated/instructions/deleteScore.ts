@@ -39,17 +39,17 @@ import {
   type ResolvedAccount,
 } from "../shared";
 
-export const CALCULATE_SCORE_DISCRIMINATOR = new Uint8Array([
-  61, 200, 173, 174, 194, 195, 248, 158,
+export const DELETE_SCORE_DISCRIMINATOR = new Uint8Array([
+  206, 156, 248, 88, 198, 76, 186, 126,
 ]);
 
-export function getCalculateScoreDiscriminatorBytes() {
+export function getDeleteScoreDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CALCULATE_SCORE_DISCRIMINATOR,
+    DELETE_SCORE_DISCRIMINATOR,
   );
 }
 
-export type CalculateScoreInstruction<
+export type DeleteScoreInstruction<
   TProgram extends string = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
   TAccountScoreAccount extends string | AccountMeta<string> = string,
   TAccountIdentity extends string | AccountMeta<string> = string,
@@ -78,55 +78,57 @@ export type CalculateScoreInstruction<
     ]
   >;
 
-export type CalculateScoreInstructionData = {
-  discriminator: ReadonlyUint8Array;
-};
+export type DeleteScoreInstructionData = { discriminator: ReadonlyUint8Array };
 
-export type CalculateScoreInstructionDataArgs = {};
+export type DeleteScoreInstructionDataArgs = {};
 
-export function getCalculateScoreInstructionDataEncoder(): FixedSizeEncoder<CalculateScoreInstructionDataArgs> {
+export function getDeleteScoreInstructionDataEncoder(): FixedSizeEncoder<DeleteScoreInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: CALCULATE_SCORE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: DELETE_SCORE_DISCRIMINATOR }),
   );
 }
 
-export function getCalculateScoreInstructionDataDecoder(): FixedSizeDecoder<CalculateScoreInstructionData> {
+export function getDeleteScoreInstructionDataDecoder(): FixedSizeDecoder<DeleteScoreInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getCalculateScoreInstructionDataCodec(): FixedSizeCodec<
-  CalculateScoreInstructionDataArgs,
-  CalculateScoreInstructionData
+export function getDeleteScoreInstructionDataCodec(): FixedSizeCodec<
+  DeleteScoreInstructionDataArgs,
+  DeleteScoreInstructionData
 > {
   return combineCodec(
-    getCalculateScoreInstructionDataEncoder(),
-    getCalculateScoreInstructionDataDecoder(),
+    getDeleteScoreInstructionDataEncoder(),
+    getDeleteScoreInstructionDataDecoder(),
   );
 }
 
-export type CalculateScoreAsyncInput<
+export type DeleteScoreAsyncInput<
   TAccountScoreAccount extends string = string,
   TAccountIdentity extends string = string,
   TAccountOwner extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  scoreAccount?: Address<TAccountScoreAccount>;
+  /**
+   * Address is verified via PDA seeds and additionally in the instruction body.
+   * We only deserialize/process it when `data_len() > 0`.
+   */
+  scoreAccount: Address<TAccountScoreAccount>;
   identity?: Address<TAccountIdentity>;
   owner: TransactionSigner<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
-export async function getCalculateScoreInstructionAsync<
+export async function getDeleteScoreInstructionAsync<
   TAccountScoreAccount extends string,
   TAccountIdentity extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: CalculateScoreAsyncInput<
+  input: DeleteScoreAsyncInput<
     TAccountScoreAccount,
     TAccountIdentity,
     TAccountOwner,
@@ -134,7 +136,7 @@ export async function getCalculateScoreInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  CalculateScoreInstruction<
+  DeleteScoreInstruction<
     TProgramAddress,
     TAccountScoreAccount,
     TAccountIdentity,
@@ -159,15 +161,6 @@ export async function getCalculateScoreInstructionAsync<
   >;
 
   // Resolve default values.
-  if (!accounts.scoreAccount.value) {
-    accounts.scoreAccount.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([115, 99, 111, 114, 101])),
-        getAddressEncoder().encode(expectAddress(accounts.owner.value)),
-      ],
-    });
-  }
   if (!accounts.identity.value) {
     accounts.identity.value = await getProgramDerivedAddress({
       programAddress,
@@ -192,9 +185,9 @@ export async function getCalculateScoreInstructionAsync<
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getCalculateScoreInstructionDataEncoder().encode({}),
+    data: getDeleteScoreInstructionDataEncoder().encode({}),
     programAddress,
-  } as CalculateScoreInstruction<
+  } as DeleteScoreInstruction<
     TProgramAddress,
     TAccountScoreAccount,
     TAccountIdentity,
@@ -203,33 +196,37 @@ export async function getCalculateScoreInstructionAsync<
   >);
 }
 
-export type CalculateScoreInput<
+export type DeleteScoreInput<
   TAccountScoreAccount extends string = string,
   TAccountIdentity extends string = string,
   TAccountOwner extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  /**
+   * Address is verified via PDA seeds and additionally in the instruction body.
+   * We only deserialize/process it when `data_len() > 0`.
+   */
   scoreAccount: Address<TAccountScoreAccount>;
   identity: Address<TAccountIdentity>;
   owner: TransactionSigner<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
-export function getCalculateScoreInstruction<
+export function getDeleteScoreInstruction<
   TAccountScoreAccount extends string,
   TAccountIdentity extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: CalculateScoreInput<
+  input: DeleteScoreInput<
     TAccountScoreAccount,
     TAccountIdentity,
     TAccountOwner,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): CalculateScoreInstruction<
+): DeleteScoreInstruction<
   TProgramAddress,
   TAccountScoreAccount,
   TAccountIdentity,
@@ -266,9 +263,9 @@ export function getCalculateScoreInstruction<
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getCalculateScoreInstructionDataEncoder().encode({}),
+    data: getDeleteScoreInstructionDataEncoder().encode({}),
     programAddress,
-  } as CalculateScoreInstruction<
+  } as DeleteScoreInstruction<
     TProgramAddress,
     TAccountScoreAccount,
     TAccountIdentity,
@@ -277,28 +274,32 @@ export function getCalculateScoreInstruction<
   >);
 }
 
-export type ParsedCalculateScoreInstruction<
+export type ParsedDeleteScoreInstruction<
   TProgram extends string = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /**
+     * Address is verified via PDA seeds and additionally in the instruction body.
+     * We only deserialize/process it when `data_len() > 0`.
+     */
     scoreAccount: TAccountMetas[0];
     identity: TAccountMetas[1];
     owner: TAccountMetas[2];
     systemProgram: TAccountMetas[3];
   };
-  data: CalculateScoreInstructionData;
+  data: DeleteScoreInstructionData;
 };
 
-export function parseCalculateScoreInstruction<
+export function parseDeleteScoreInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedCalculateScoreInstruction<TProgram, TAccountMetas> {
+): ParsedDeleteScoreInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
@@ -317,6 +318,6 @@ export function parseCalculateScoreInstruction<
       owner: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getCalculateScoreInstructionDataDecoder().decode(instruction.data),
+    data: getDeleteScoreInstructionDataDecoder().decode(instruction.data),
   };
 }

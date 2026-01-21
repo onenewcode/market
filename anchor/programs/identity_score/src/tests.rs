@@ -108,6 +108,47 @@ mod tests {
         }
     }
 
+    fn delete_identity_ix(owner: &Pubkey, identity: &Pubkey, score_account: &Pubkey) -> Instruction {
+        let discriminator = get_discriminator("delete_identity");
+        let (_, identity_bump) = get_identity_pda(owner);
+        let (_, score_bump) = get_score_pda(owner);
+
+        let mut data = discriminator.to_vec();
+        data.push(identity_bump);
+        data.push(score_bump);
+
+        Instruction {
+            program_id: PROGRAM_ID,
+            accounts: vec![
+                AccountMeta::new(*identity, false),
+                AccountMeta::new(*score_account, false),
+                AccountMeta::new(*owner, true),
+                AccountMeta::new_readonly(system_program::ID, false),
+            ],
+            data,
+        }
+    }
+
+    fn delete_score_ix(owner: &Pubkey, identity: &Pubkey, score_account: &Pubkey) -> Instruction {
+        let discriminator = get_discriminator("delete_score");
+        let (_, identity_bump) = get_identity_pda(owner);
+        let (_, score_bump) = get_score_pda(owner);
+
+        let mut data = discriminator.to_vec();
+        data.push(score_bump);
+
+        Instruction {
+            program_id: PROGRAM_ID,
+            accounts: vec![
+                AccountMeta::new(*score_account, false),
+                AccountMeta::new(*identity, false),
+                AccountMeta::new(*owner, true),
+                AccountMeta::new_readonly(system_program::ID, false),
+            ],
+            data,
+        }
+    }
+
     #[test]
     fn test_create_identity() {
         let mut svm = LiteSVM::new();
@@ -489,5 +530,257 @@ mod tests {
         let result = svm.send_transaction(tx);
 
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_delete_score() {
+        let mut svm = LiteSVM::new();
+        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
+        svm.add_program(PROGRAM_ID, program_bytes);
+
+        let user = Keypair::new();
+        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+
+        let (identity_pda, _) = get_identity_pda(&user.pubkey());
+        let (score_pda, _) = get_score_pda(&user.pubkey());
+
+        // Create and Verify Identity
+        let create_ix = create_identity_ix(&user.pubkey(), &identity_pda);
+        let verify_ix = verify_identity_ix(&user.pubkey(), &identity_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[create_ix, verify_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Calculate Score
+        let calc_ix = calculate_score_ix(&user.pubkey(), &identity_pda, &score_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[calc_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Verify score account exists
+        assert!(svm.get_account(&score_pda).is_some());
+
+        // Delete Score
+        let delete_score_ix = delete_score_ix(&user.pubkey(), &identity_pda, &score_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[delete_score_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Verify score account is deleted
+        assert!(svm.get_account(&score_pda).is_none());
+        // Verify identity account still exists
+        assert!(svm.get_account(&identity_pda).is_some());
+    }
+
+    #[test]
+    fn test_delete_identity_with_score() {
+        let mut svm = LiteSVM::new();
+        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
+        svm.add_program(PROGRAM_ID, program_bytes);
+
+        let user = Keypair::new();
+        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+
+        let (identity_pda, _) = get_identity_pda(&user.pubkey());
+        let (score_pda, _) = get_score_pda(&user.pubkey());
+
+        // Create and Verify Identity
+        let create_ix = create_identity_ix(&user.pubkey(), &identity_pda);
+        let verify_ix = verify_identity_ix(&user.pubkey(), &identity_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[create_ix, verify_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Calculate Score
+        let calc_ix = calculate_score_ix(&user.pubkey(), &identity_pda, &score_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[calc_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Verify both accounts exist
+        assert!(svm.get_account(&identity_pda).is_some());
+        assert!(svm.get_account(&score_pda).is_some());
+
+        // Delete Identity (should also delete score)
+        let delete_ix = delete_identity_ix(&user.pubkey(), &identity_pda, &score_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[delete_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Verify both accounts are deleted
+        assert!(svm.get_account(&identity_pda).is_none());
+        assert!(svm.get_account(&score_pda).is_none());
+    }
+
+    #[test]
+    fn test_delete_identity_unauthorized() {
+        let mut svm = LiteSVM::new();
+        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
+        svm.add_program(PROGRAM_ID, program_bytes);
+
+        let user = Keypair::new();
+        let hacker = Keypair::new();
+        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+        svm.airdrop(&hacker.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+
+        let (identity_pda, _) = get_identity_pda(&user.pubkey());
+        let (score_pda, _) = get_score_pda(&user.pubkey());
+
+        // Create and Verify Identity
+        let create_ix = create_identity_ix(&user.pubkey(), &identity_pda);
+        let verify_ix = verify_identity_ix(&user.pubkey(), &identity_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[create_ix, verify_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Calculate Score
+        let calc_ix = calculate_score_ix(&user.pubkey(), &identity_pda, &score_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[calc_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Hacker tries to delete user's identity (should fail)
+        let delete_ix = delete_identity_ix(&hacker.pubkey(), &identity_pda, &score_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[delete_ix],
+            Some(&hacker.pubkey()),
+            &[&hacker],
+            blockhash,
+        );
+        let result = svm.send_transaction(tx);
+
+        assert!(result.is_err());
+        // Verify both accounts still exist
+        assert!(svm.get_account(&identity_pda).is_some());
+        assert!(svm.get_account(&score_pda).is_some());
+    }
+
+    #[test]
+    fn test_delete_identity_without_score() {
+        let mut svm = LiteSVM::new();
+        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
+        svm.add_program(PROGRAM_ID, program_bytes);
+
+        let user = Keypair::new();
+        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+
+        let (identity_pda, _) = get_identity_pda(&user.pubkey());
+        let (score_pda, _) = get_score_pda(&user.pubkey());
+
+        // Only create identity, don't create score
+        let create_ix = create_identity_ix(&user.pubkey(), &identity_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[create_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Verify identity exists but score doesn't
+        assert!(svm.get_account(&identity_pda).is_some());
+        assert!(svm.get_account(&score_pda).is_none());
+
+        // Delete identity (should succeed even without score)
+        let delete_ix = delete_identity_ix(&user.pubkey(), &identity_pda, &score_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[delete_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Verify identity is deleted
+        assert!(svm.get_account(&identity_pda).is_none());
+        // Score still doesn't exist
+        assert!(svm.get_account(&score_pda).is_none());
+    }
+
+    #[test]
+    fn test_delete_score_without_score() {
+        let mut svm = LiteSVM::new();
+        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
+        svm.add_program(PROGRAM_ID, program_bytes);
+
+        let user = Keypair::new();
+        svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
+
+        let (identity_pda, _) = get_identity_pda(&user.pubkey());
+        let (score_pda, _) = get_score_pda(&user.pubkey());
+
+        // Create and Verify Identity, but don't create score
+        let create_ix = create_identity_ix(&user.pubkey(), &identity_pda);
+        let verify_ix = verify_identity_ix(&user.pubkey(), &identity_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[create_ix, verify_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Verify score account doesn't exist yet
+        assert!(svm.get_account(&score_pda).is_none());
+
+        // Delete Score when score doesn't exist (should succeed)
+        let delete_score_ix = delete_score_ix(&user.pubkey(), &identity_pda, &score_pda);
+        let blockhash = svm.latest_blockhash();
+        let tx = Transaction::new_signed_with_payer(
+            &[delete_score_ix],
+            Some(&user.pubkey()),
+            &[&user],
+            blockhash,
+        );
+        svm.send_transaction(tx).unwrap();
+
+        // Verify identity still exists
+        assert!(svm.get_account(&identity_pda).is_some());
+        // Score still doesn't exist
+        assert!(svm.get_account(&score_pda).is_none());
     }
 }

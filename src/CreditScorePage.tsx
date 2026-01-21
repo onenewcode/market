@@ -15,7 +15,7 @@ import { ScoreLevel } from "./generated/types/scoreLevel";
 import { theme } from "./styles/theme";
 
 export function CreditScorePage() {
-  const { scoreData, calculating, calculateScore } = useCreditScore();
+  const { scoreData, calculating, calculateScore, deleteScore, deleting } = useCreditScore();
 
   // Search state
   const [searchAddress, setSearchAddress] = useState("");
@@ -46,6 +46,17 @@ export function CreditScorePage() {
         "%c[CreditScore] calculateScore 耗时: " + ms.toFixed(0) + "ms",
         "background:#fff3cd;color:#664d03;font-weight:600;padding:2px 6px;border-radius:4px;border:1px solid #ffeeba"
       );
+    }
+  };
+
+  const handleDeleteScore = async () => {
+    if (window.confirm("Are you sure you want to delete your credit score? This action cannot be undone.") && scoreData) {
+      try {
+        await deleteScore();
+      } catch (error) {
+        console.error("Failed to delete score:", error);
+        alert("Failed to delete score. Please try again.");
+      }
     }
   };
 
@@ -127,13 +138,20 @@ export function CreditScorePage() {
             </span>
           </div>
 
-          <div className="pt-4">
+          <div className="pt-4 space-y-3">
             <button
               onClick={handleCalculate}
               disabled={calculating}
               className={`${theme.button.variants.secondary} w-full`}
             >
               {calculating ? "Updating..." : "Recalculate Score"}
+            </button>
+            <button
+              onClick={handleDeleteScore}
+              disabled={deleting}
+              className={`${theme.button.variants.danger} w-full`}
+            >
+              {deleting ? "Deleting..." : "Delete Score"}
             </button>
           </div>
         </div>

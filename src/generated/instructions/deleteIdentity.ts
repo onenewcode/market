@@ -39,20 +39,20 @@ import {
   type ResolvedAccount,
 } from "../shared";
 
-export const CALCULATE_SCORE_DISCRIMINATOR = new Uint8Array([
-  61, 200, 173, 174, 194, 195, 248, 158,
+export const DELETE_IDENTITY_DISCRIMINATOR = new Uint8Array([
+  154, 193, 133, 129, 20, 36, 147, 64,
 ]);
 
-export function getCalculateScoreDiscriminatorBytes() {
+export function getDeleteIdentityDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    CALCULATE_SCORE_DISCRIMINATOR,
+    DELETE_IDENTITY_DISCRIMINATOR,
   );
 }
 
-export type CalculateScoreInstruction<
+export type DeleteIdentityInstruction<
   TProgram extends string = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
-  TAccountScoreAccount extends string | AccountMeta<string> = string,
   TAccountIdentity extends string | AccountMeta<string> = string,
+  TAccountScoreAccount extends string | AccountMeta<string> = string,
   TAccountOwner extends string | AccountMeta<string> = string,
   TAccountSystemProgram extends string | AccountMeta<string> =
     "11111111111111111111111111111111",
@@ -61,12 +61,12 @@ export type CalculateScoreInstruction<
   InstructionWithData<ReadonlyUint8Array> &
   InstructionWithAccounts<
     [
+      TAccountIdentity extends string
+        ? WritableAccount<TAccountIdentity>
+        : TAccountIdentity,
       TAccountScoreAccount extends string
         ? WritableAccount<TAccountScoreAccount>
         : TAccountScoreAccount,
-      TAccountIdentity extends string
-        ? ReadonlyAccount<TAccountIdentity>
-        : TAccountIdentity,
       TAccountOwner extends string
         ? WritableSignerAccount<TAccountOwner> &
             AccountSignerMeta<TAccountOwner>
@@ -78,66 +78,67 @@ export type CalculateScoreInstruction<
     ]
   >;
 
-export type CalculateScoreInstructionData = {
+export type DeleteIdentityInstructionData = {
   discriminator: ReadonlyUint8Array;
 };
 
-export type CalculateScoreInstructionDataArgs = {};
+export type DeleteIdentityInstructionDataArgs = {};
 
-export function getCalculateScoreInstructionDataEncoder(): FixedSizeEncoder<CalculateScoreInstructionDataArgs> {
+export function getDeleteIdentityInstructionDataEncoder(): FixedSizeEncoder<DeleteIdentityInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: CALCULATE_SCORE_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: DELETE_IDENTITY_DISCRIMINATOR }),
   );
 }
 
-export function getCalculateScoreInstructionDataDecoder(): FixedSizeDecoder<CalculateScoreInstructionData> {
+export function getDeleteIdentityInstructionDataDecoder(): FixedSizeDecoder<DeleteIdentityInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getCalculateScoreInstructionDataCodec(): FixedSizeCodec<
-  CalculateScoreInstructionDataArgs,
-  CalculateScoreInstructionData
+export function getDeleteIdentityInstructionDataCodec(): FixedSizeCodec<
+  DeleteIdentityInstructionDataArgs,
+  DeleteIdentityInstructionData
 > {
   return combineCodec(
-    getCalculateScoreInstructionDataEncoder(),
-    getCalculateScoreInstructionDataDecoder(),
+    getDeleteIdentityInstructionDataEncoder(),
+    getDeleteIdentityInstructionDataDecoder(),
   );
 }
 
-export type CalculateScoreAsyncInput<
-  TAccountScoreAccount extends string = string,
+export type DeleteIdentityAsyncInput<
   TAccountIdentity extends string = string,
+  TAccountScoreAccount extends string = string,
   TAccountOwner extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  scoreAccount?: Address<TAccountScoreAccount>;
   identity?: Address<TAccountIdentity>;
+  /** Score account info - verified manually to allow uninitialized account */
+  scoreAccount: Address<TAccountScoreAccount>;
   owner: TransactionSigner<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
-export async function getCalculateScoreInstructionAsync<
-  TAccountScoreAccount extends string,
+export async function getDeleteIdentityInstructionAsync<
   TAccountIdentity extends string,
+  TAccountScoreAccount extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: CalculateScoreAsyncInput<
-    TAccountScoreAccount,
+  input: DeleteIdentityAsyncInput<
     TAccountIdentity,
+    TAccountScoreAccount,
     TAccountOwner,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  CalculateScoreInstruction<
+  DeleteIdentityInstruction<
     TProgramAddress,
-    TAccountScoreAccount,
     TAccountIdentity,
+    TAccountScoreAccount,
     TAccountOwner,
     TAccountSystemProgram
   >
@@ -148,8 +149,8 @@ export async function getCalculateScoreInstructionAsync<
 
   // Original accounts.
   const originalAccounts = {
+    identity: { value: input.identity ?? null, isWritable: true },
     scoreAccount: { value: input.scoreAccount ?? null, isWritable: true },
-    identity: { value: input.identity ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -159,15 +160,6 @@ export async function getCalculateScoreInstructionAsync<
   >;
 
   // Resolve default values.
-  if (!accounts.scoreAccount.value) {
-    accounts.scoreAccount.value = await getProgramDerivedAddress({
-      programAddress,
-      seeds: [
-        getBytesEncoder().encode(new Uint8Array([115, 99, 111, 114, 101])),
-        getAddressEncoder().encode(expectAddress(accounts.owner.value)),
-      ],
-    });
-  }
   if (!accounts.identity.value) {
     accounts.identity.value = await getProgramDerivedAddress({
       programAddress,
@@ -187,52 +179,53 @@ export async function getCalculateScoreInstructionAsync<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.scoreAccount),
       getAccountMeta(accounts.identity),
+      getAccountMeta(accounts.scoreAccount),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getCalculateScoreInstructionDataEncoder().encode({}),
+    data: getDeleteIdentityInstructionDataEncoder().encode({}),
     programAddress,
-  } as CalculateScoreInstruction<
+  } as DeleteIdentityInstruction<
     TProgramAddress,
-    TAccountScoreAccount,
     TAccountIdentity,
+    TAccountScoreAccount,
     TAccountOwner,
     TAccountSystemProgram
   >);
 }
 
-export type CalculateScoreInput<
-  TAccountScoreAccount extends string = string,
+export type DeleteIdentityInput<
   TAccountIdentity extends string = string,
+  TAccountScoreAccount extends string = string,
   TAccountOwner extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
-  scoreAccount: Address<TAccountScoreAccount>;
   identity: Address<TAccountIdentity>;
+  /** Score account info - verified manually to allow uninitialized account */
+  scoreAccount: Address<TAccountScoreAccount>;
   owner: TransactionSigner<TAccountOwner>;
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
-export function getCalculateScoreInstruction<
-  TAccountScoreAccount extends string,
+export function getDeleteIdentityInstruction<
   TAccountIdentity extends string,
+  TAccountScoreAccount extends string,
   TAccountOwner extends string,
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: CalculateScoreInput<
-    TAccountScoreAccount,
+  input: DeleteIdentityInput<
     TAccountIdentity,
+    TAccountScoreAccount,
     TAccountOwner,
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): CalculateScoreInstruction<
+): DeleteIdentityInstruction<
   TProgramAddress,
-  TAccountScoreAccount,
   TAccountIdentity,
+  TAccountScoreAccount,
   TAccountOwner,
   TAccountSystemProgram
 > {
@@ -242,8 +235,8 @@ export function getCalculateScoreInstruction<
 
   // Original accounts.
   const originalAccounts = {
+    identity: { value: input.identity ?? null, isWritable: true },
     scoreAccount: { value: input.scoreAccount ?? null, isWritable: true },
-    identity: { value: input.identity ?? null, isWritable: false },
     owner: { value: input.owner ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
@@ -261,44 +254,45 @@ export function getCalculateScoreInstruction<
   const getAccountMeta = getAccountMetaFactory(programAddress, "programId");
   return Object.freeze({
     accounts: [
-      getAccountMeta(accounts.scoreAccount),
       getAccountMeta(accounts.identity),
+      getAccountMeta(accounts.scoreAccount),
       getAccountMeta(accounts.owner),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getCalculateScoreInstructionDataEncoder().encode({}),
+    data: getDeleteIdentityInstructionDataEncoder().encode({}),
     programAddress,
-  } as CalculateScoreInstruction<
+  } as DeleteIdentityInstruction<
     TProgramAddress,
-    TAccountScoreAccount,
     TAccountIdentity,
+    TAccountScoreAccount,
     TAccountOwner,
     TAccountSystemProgram
   >);
 }
 
-export type ParsedCalculateScoreInstruction<
+export type ParsedDeleteIdentityInstruction<
   TProgram extends string = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
-    scoreAccount: TAccountMetas[0];
-    identity: TAccountMetas[1];
+    identity: TAccountMetas[0];
+    /** Score account info - verified manually to allow uninitialized account */
+    scoreAccount: TAccountMetas[1];
     owner: TAccountMetas[2];
     systemProgram: TAccountMetas[3];
   };
-  data: CalculateScoreInstructionData;
+  data: DeleteIdentityInstructionData;
 };
 
-export function parseCalculateScoreInstruction<
+export function parseDeleteIdentityInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedCalculateScoreInstruction<TProgram, TAccountMetas> {
+): ParsedDeleteIdentityInstruction<TProgram, TAccountMetas> {
   if (instruction.accounts.length < 4) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
@@ -312,11 +306,11 @@ export function parseCalculateScoreInstruction<
   return {
     programAddress: instruction.programAddress,
     accounts: {
-      scoreAccount: getNextAccount(),
       identity: getNextAccount(),
+      scoreAccount: getNextAccount(),
       owner: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getCalculateScoreInstructionDataDecoder().decode(instruction.data),
+    data: getDeleteIdentityInstructionDataDecoder().decode(instruction.data),
   };
 }

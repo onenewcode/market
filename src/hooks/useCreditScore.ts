@@ -19,6 +19,7 @@ import {
 } from "../config";
 import { getCalculateScoreInstructionDataEncoder } from "../generated/instructions/calculateScore";
 import { getCreateIdentityInstructionDataEncoder } from "../generated/instructions/createIdentity";
+import { getDeleteScoreInstructionDataEncoder } from "../generated/instructions/deleteScore";
 import {
   fetchMaybeCreditScoreAccount,
   type CreditScoreAccount,
@@ -34,6 +35,7 @@ export function useCreditScore() {
 
   const [scoreData, setScoreData] = useState<CreditScoreAccount | null>(null);
   const [calculating, setCalculating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [cachedScorePda, setCachedScorePda] = useState<Address | null>(null);
   const [cachedIdentityPda, setCachedIdentityPda] = useState<Address | null>(
     null
@@ -142,6 +144,46 @@ export function useCreditScore() {
     }
   }, [wallet, getPda, send, cachedScorePda, cachedIdentityPda, pool, session]);
 
+  const deleteScore = useCallback(async () => {
+    if (!wallet) throw new Error("Wallet not connected");
+
+    setDeleting(true);
+    try {
+      const walletAddress = wallet.account.address;
+      const scorePda = await getPda(SEEDS.SCORE, walletAddress);
+      const identityPda = await getPda(SEEDS.IDENTITY, walletAddress);
+
+      const instruction = {
+        programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
+        accounts: [
+          { address: scorePda, role: 1 }, // Writable
+          { address: identityPda, role: 0 }, // Readonly
+          { address: walletAddress, role: 3 }, // WritableSigner
+          { address: SYSTEM_PROGRAM_ADDRESS, role: 0 }, // Readonly
+        ],
+        data: new Uint8Array(
+          getDeleteScoreInstructionDataEncoder().encode({})
+        ),
+      };
+
+      await send({ instructions: [instruction] });
+
+      // Refresh score data after deletion
+      const maybe = await fetchMaybeCreditScoreAccount(rpc, scorePda);
+      if (maybe.exists) {
+        setScoreData(maybe.data);
+      } else {
+        setScoreData(null);
+      }
+      return true;
+    } catch (error) {
+      console.error("Failed to delete score:", error);
+      throw error;
+    } finally {
+      setDeleting(false);
+    }
+  }, [wallet, getPda, send]);
+
   useEffect(() => {
     const run = async () => {
       if (!wallet) return;
@@ -188,6 +230,8 @@ export function useCreditScore() {
   return {
     scoreData,
     calculating,
+    deleting,
     calculateScore,
+    deleteScore,
   };
 }
