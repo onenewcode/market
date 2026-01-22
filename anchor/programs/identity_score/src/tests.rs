@@ -73,7 +73,6 @@ mod tests {
         score_account: &Pubkey,
     ) -> Instruction {
         let discriminator = get_discriminator("calculate_score");
-        let (_, identity_bump) = get_identity_pda(owner);
         let (_, score_bump) = get_score_pda(owner);
 
         let mut data = discriminator.to_vec();
@@ -135,7 +134,6 @@ mod tests {
 
     fn delete_score_ix(owner: &Pubkey, identity: &Pubkey, score_account: &Pubkey) -> Instruction {
         let discriminator = get_discriminator("delete_score");
-        let (_, identity_bump) = get_identity_pda(owner);
         let (_, score_bump) = get_score_pda(owner);
 
         let mut data = discriminator.to_vec();
@@ -153,11 +151,22 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_create_identity() {
+    /// Helper function to initialize test environment with loaded program
+    fn setup_test_environment() -> LiteSVM {
         let mut svm = LiteSVM::new();
         let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        match svm.add_program(PROGRAM_ID, program_bytes) {
+            Ok(_) => svm,
+            Err(e) => {
+                println!("Error adding program: {:?}", e);
+                panic!("Failed to add program to LiteSVM");
+            }
+        }
+    }
+
+    #[test]
+    fn test_create_identity() {
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
@@ -182,9 +191,7 @@ mod tests {
 
     #[test]
     fn test_verify_identity() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
@@ -223,9 +230,7 @@ mod tests {
 
     #[test]
     fn test_verify_identity_unauthorized() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         let hacker = Keypair::new();
@@ -264,9 +269,7 @@ mod tests {
 
     #[test]
     fn test_calculate_score_high() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         // Give user 15 SOL (High Score >= 10 SOL)
@@ -319,9 +322,7 @@ mod tests {
 
     #[test]
     fn test_unverify_identity() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
@@ -372,9 +373,7 @@ mod tests {
 
     #[test]
     fn test_calculate_score_medium() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         // Give user 5 SOL (Medium Score >= 1 SOL)
@@ -417,9 +416,7 @@ mod tests {
 
     #[test]
     fn test_calculate_score_low() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         // Give user 0.5 SOL (Low Score < 1 SOL)
@@ -462,9 +459,7 @@ mod tests {
 
     #[test]
     fn test_calculate_score_unverified() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
@@ -499,9 +494,7 @@ mod tests {
 
     #[test]
     fn test_calculate_score_after_unverify() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
@@ -538,9 +531,7 @@ mod tests {
 
     #[test]
     fn test_delete_score() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
@@ -593,9 +584,7 @@ mod tests {
 
     #[test]
     fn test_delete_identity_with_score() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
@@ -648,9 +637,7 @@ mod tests {
 
     #[test]
     fn test_delete_identity_unauthorized() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         let hacker = Keypair::new();
@@ -703,9 +690,7 @@ mod tests {
 
     #[test]
     fn test_delete_identity_without_score() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
@@ -747,9 +732,7 @@ mod tests {
 
     #[test]
     fn test_delete_score_without_score() {
-        let mut svm = LiteSVM::new();
-        let program_bytes = include_bytes!("../../../target/deploy/identity_score.so");
-        svm.add_program(PROGRAM_ID, program_bytes);
+        let mut svm = setup_test_environment();
 
         let user = Keypair::new();
         svm.airdrop(&user.pubkey(), 10 * LAMPORTS_PER_SOL).unwrap();
