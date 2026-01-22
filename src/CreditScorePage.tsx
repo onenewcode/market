@@ -14,9 +14,10 @@ import { useCreditScore } from "./hooks/useCreditScore";
 import { ScoreLevel } from "./generated/types/scoreLevel";
 import { theme } from "./styles/theme";
 import { useAlert } from "./hooks/useAlert";
+import { Modal } from "./components/ui/Modal";
 
 export function CreditScorePage() {
-  const { scoreData, calculating, calculateScore, deleteScore, deleting } =
+  const { scoreData, calculating, calculateScore, deleteScore, deleting, showDeleteModal, setShowDeleteModal } =
     useCreditScore();
   const { showAlert } = useAlert();
 
@@ -59,33 +60,21 @@ export function CreditScorePage() {
   };
 
   const handleDeleteScore = async () => {
-    showAlert(
-      "Delete Score",
-      "Are you sure you want to delete your credit score? This action cannot be undone.",
-      {
-        variant: "warning",
-        showCancel: true,
-        onConfirm: async () => {
-          if (scoreData) {
-            try {
-              await deleteScore();
-              showAlert(
-                "Score Deleted",
-                "Your credit score has been successfully deleted.",
-                { variant: "success" }
-              );
-            } catch (error) {
-              console.error("Failed to delete score:", error);
-              showAlert(
-                "Deletion Failed",
-                "Failed to delete score. Please try again.",
-                { variant: "error" }
-              );
-            }
-          }
-        },
-      }
-    );
+    try {
+      await deleteScore();
+      showAlert(
+        "Score Deleted",
+        "Your credit score has been successfully deleted.",
+        { variant: "success" }
+      );
+    } catch (error) {
+      console.error("Failed to delete score:", error);
+      showAlert(
+        "Deletion Failed",
+        "Failed to delete score. Please try again.",
+        { variant: "error" }
+      );
+    }
   };
 
   const handleSearch = async () => {
@@ -175,7 +164,7 @@ export function CreditScorePage() {
               {calculating ? "Updating..." : "Recalculate Score"}
             </button>
             <button
-              onClick={handleDeleteScore}
+              onClick={() => setShowDeleteModal(true)}
               disabled={deleting}
               className={`${theme.button.variants.danger} w-full`}
             >
@@ -253,6 +242,37 @@ export function CreditScorePage() {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={showDeleteModal}
+        title="Delete Score"
+        onClose={() => setShowDeleteModal(false)}
+        variant="default"
+        actions={
+          <>
+            <button
+              className={`${theme.button.base} ${theme.button.variants.secondary}`}
+              onClick={() => setShowDeleteModal(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className={`${theme.button.base} ${theme.button.variants.danger}`}
+              onClick={handleDeleteScore}
+              disabled={deleting}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted">
+            Are you sure you want to delete your credit score? This action cannot
+            be undone.
+          </p>
+        </div>
+      </Modal>
     </div>
   );
 }

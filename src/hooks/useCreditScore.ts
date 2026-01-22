@@ -36,6 +36,7 @@ export function useCreditScore() {
   const [scoreData, setScoreData] = useState<CreditScoreAccount | null>(null);
   const [calculating, setCalculating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [cachedScorePda, setCachedScorePda] = useState<Address | null>(null);
   const [cachedIdentityPda, setCachedIdentityPda] = useState<Address | null>(
     null
@@ -229,6 +230,8 @@ export function useCreditScore() {
     scoreData,
     calculating,
     deleting,
+    showDeleteModal,
+    setShowDeleteModal,
     calculateScore,
     deleteScore,
   };

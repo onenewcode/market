@@ -46,3 +46,14 @@ pub struct ScoreDeleted {
     pub score_account: Pubkey,
     pub timestamp: i64,
 }
+
+#[event]
+pub struct IdentityTransferred {
+    pub old_owner: Pubkey,
+    pub new_owner: Pubkey,
+    pub old_identity: Pubkey,
+    pub new_identity: Pubkey,
+    pub old_score: Option<Pubkey>,
+    pub new_score: Option<Pubkey>,
+    pub timestamp: i64,
+}

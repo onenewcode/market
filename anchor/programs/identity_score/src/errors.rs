@@ -8,4 +8,6 @@ pub enum IdentityScoreError {
     IdentityNotVerified,
     #[msg("Failed to update the score.")]
     ScoreUpdateFailed,
+    #[msg("Failed to transfer identity.")]
+    IdentityTransferFailed,
 }

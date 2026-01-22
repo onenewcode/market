@@ -38,4 +38,8 @@ pub mod identity_score {
     pub fn delete_score(ctx: Context<DeleteScore>) -> Result<()> {
         instructions::score::delete_score(ctx)
     }
+
+    pub fn transfer_identity(ctx: Context<TransferIdentity>) -> Result<()> {
+        instructions::transfer::transfer_identity(ctx)
+    }
 }

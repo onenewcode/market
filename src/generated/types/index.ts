@@ -8,6 +8,7 @@
 
 export * from "./identityCreated";
 export * from "./identityDeleted";
+export * from "./identityTransferred";
 export * from "./identityUnverified";
 export * from "./identityVerified";
 export * from "./scoreCalculated";

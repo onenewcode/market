@@ -18,6 +18,7 @@ import {
   type ParsedCreateIdentityInstruction,
   type ParsedDeleteIdentityInstruction,
   type ParsedDeleteScoreInstruction,
+  type ParsedTransferIdentityInstruction,
   type ParsedUnverifyIdentityInstruction,
   type ParsedVerifyIdentityInstruction,
 } from "../instructions";
@@ -66,6 +67,7 @@ export enum IdentityScoreInstruction {
   CreateIdentity,
   DeleteIdentity,
   DeleteScore,
+  TransferIdentity,
   UnverifyIdentity,
   VerifyIdentity,
 }
@@ -122,6 +124,17 @@ export function identifyIdentityScoreInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([182, 143, 44, 176, 187, 28, 115, 57]),
+      ),
+      0,
+    )
+  ) {
+    return IdentityScoreInstruction.TransferIdentity;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
         new Uint8Array([226, 88, 104, 49, 250, 2, 114, 24]),
       ),
       0,
@@ -160,6 +173,9 @@ export type ParsedIdentityScoreInstruction<
   | ({
       instructionType: IdentityScoreInstruction.DeleteScore;
     } & ParsedDeleteScoreInstruction<TProgram>)
+  | ({
+      instructionType: IdentityScoreInstruction.TransferIdentity;
+    } & ParsedTransferIdentityInstruction<TProgram>)
   | ({
       instructionType: IdentityScoreInstruction.UnverifyIdentity;
     } & ParsedUnverifyIdentityInstruction<TProgram>)
