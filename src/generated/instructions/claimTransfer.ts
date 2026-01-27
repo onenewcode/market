@@ -39,20 +39,21 @@ import {
   type ResolvedAccount,
 } from "../shared";
 
-export const TRANSFER_IDENTITY_DISCRIMINATOR = new Uint8Array([
-  182, 143, 44, 176, 187, 28, 115, 57,
+export const CLAIM_TRANSFER_DISCRIMINATOR = new Uint8Array([
+  202, 178, 58, 190, 230, 234, 229, 17,
 ]);
 
-export function getTransferIdentityDiscriminatorBytes() {
+export function getClaimTransferDiscriminatorBytes() {
   return fixEncoderSize(getBytesEncoder(), 8).encode(
-    TRANSFER_IDENTITY_DISCRIMINATOR,
+    CLAIM_TRANSFER_DISCRIMINATOR,
   );
 }
 
-export type TransferIdentityInstruction<
+export type ClaimTransferInstruction<
   TProgram extends string = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
   TAccountOldIdentity extends string | AccountMeta<string> = string,
   TAccountNewIdentity extends string | AccountMeta<string> = string,
+  TAccountTransferRequest extends string | AccountMeta<string> = string,
   TAccountOldScore extends string | AccountMeta<string> = string,
   TAccountNewScore extends string | AccountMeta<string> = string,
   TAccountOldOwner extends string | AccountMeta<string> = string,
@@ -70,6 +71,9 @@ export type TransferIdentityInstruction<
       TAccountNewIdentity extends string
         ? WritableAccount<TAccountNewIdentity>
         : TAccountNewIdentity,
+      TAccountTransferRequest extends string
+        ? WritableAccount<TAccountTransferRequest>
+        : TAccountTransferRequest,
       TAccountOldScore extends string
         ? WritableAccount<TAccountOldScore>
         : TAccountOldScore,
@@ -81,7 +85,8 @@ export type TransferIdentityInstruction<
             AccountSignerMeta<TAccountOldOwner>
         : TAccountOldOwner,
       TAccountNewOwner extends string
-        ? ReadonlyAccount<TAccountNewOwner>
+        ? WritableSignerAccount<TAccountNewOwner> &
+            AccountSignerMeta<TAccountNewOwner>
         : TAccountNewOwner,
       TAccountSystemProgram extends string
         ? ReadonlyAccount<TAccountSystemProgram>
@@ -90,64 +95,67 @@ export type TransferIdentityInstruction<
     ]
   >;
 
-export type TransferIdentityInstructionData = {
+export type ClaimTransferInstructionData = {
   discriminator: ReadonlyUint8Array;
 };
 
-export type TransferIdentityInstructionDataArgs = {};
+export type ClaimTransferInstructionDataArgs = {};
 
-export function getTransferIdentityInstructionDataEncoder(): FixedSizeEncoder<TransferIdentityInstructionDataArgs> {
+export function getClaimTransferInstructionDataEncoder(): FixedSizeEncoder<ClaimTransferInstructionDataArgs> {
   return transformEncoder(
     getStructEncoder([["discriminator", fixEncoderSize(getBytesEncoder(), 8)]]),
-    (value) => ({ ...value, discriminator: TRANSFER_IDENTITY_DISCRIMINATOR }),
+    (value) => ({ ...value, discriminator: CLAIM_TRANSFER_DISCRIMINATOR }),
   );
 }
 
-export function getTransferIdentityInstructionDataDecoder(): FixedSizeDecoder<TransferIdentityInstructionData> {
+export function getClaimTransferInstructionDataDecoder(): FixedSizeDecoder<ClaimTransferInstructionData> {
   return getStructDecoder([
     ["discriminator", fixDecoderSize(getBytesDecoder(), 8)],
   ]);
 }
 
-export function getTransferIdentityInstructionDataCodec(): FixedSizeCodec<
-  TransferIdentityInstructionDataArgs,
-  TransferIdentityInstructionData
+export function getClaimTransferInstructionDataCodec(): FixedSizeCodec<
+  ClaimTransferInstructionDataArgs,
+  ClaimTransferInstructionData
 > {
   return combineCodec(
-    getTransferIdentityInstructionDataEncoder(),
-    getTransferIdentityInstructionDataDecoder(),
+    getClaimTransferInstructionDataEncoder(),
+    getClaimTransferInstructionDataDecoder(),
   );
 }
 
-export type TransferIdentityAsyncInput<
+export type ClaimTransferAsyncInput<
   TAccountOldIdentity extends string = string,
   TAccountNewIdentity extends string = string,
+  TAccountTransferRequest extends string = string,
   TAccountOldScore extends string = string,
   TAccountNewScore extends string = string,
   TAccountOldOwner extends string = string,
   TAccountNewOwner extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  /** 旧的身份账户（将被关闭） */
   oldIdentity?: Address<TAccountOldIdentity>;
+  /** 新的身份账户（自动创建） */
   newIdentity?: Address<TAccountNewIdentity>;
-  /**
-   * Address is verified via PDA seeds and additionally in the instruction body.
-   * We only deserialize/process it when `data_len() > 0`.
-   */
+  /** 转移请求账户（将被关闭） */
+  transferRequest: Address<TAccountTransferRequest>;
+  /** 旧的信用分账户（可选，可以是未初始化的） */
   oldScore: Address<TAccountOldScore>;
+  /** 新的信用分账户（自动创建） */
   newScore?: Address<TAccountNewScore>;
+  /** 旧身份的所有者 */
   oldOwner: TransactionSigner<TAccountOldOwner>;
-  /**
-   * We only use this address to create the new identity account.
-   * No security checks are needed on this account as it's just a destination address.
-   */
-  newOwner: Address<TAccountNewOwner>;
+  /** 新身份的所有者（接收者） */
+  newOwner: TransactionSigner<TAccountNewOwner>;
+  /** 系统程序 */
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
-export async function getTransferIdentityInstructionAsync<
+export async function getClaimTransferInstructionAsync<
   TAccountOldIdentity extends string,
   TAccountNewIdentity extends string,
+  TAccountTransferRequest extends string,
   TAccountOldScore extends string,
   TAccountNewScore extends string,
   TAccountOldOwner extends string,
@@ -155,9 +163,10 @@ export async function getTransferIdentityInstructionAsync<
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: TransferIdentityAsyncInput<
+  input: ClaimTransferAsyncInput<
     TAccountOldIdentity,
     TAccountNewIdentity,
+    TAccountTransferRequest,
     TAccountOldScore,
     TAccountNewScore,
     TAccountOldOwner,
@@ -166,10 +175,11 @@ export async function getTransferIdentityInstructionAsync<
   >,
   config?: { programAddress?: TProgramAddress },
 ): Promise<
-  TransferIdentityInstruction<
+  ClaimTransferInstruction<
     TProgramAddress,
     TAccountOldIdentity,
     TAccountNewIdentity,
+    TAccountTransferRequest,
     TAccountOldScore,
     TAccountNewScore,
     TAccountOldOwner,
@@ -185,10 +195,11 @@ export async function getTransferIdentityInstructionAsync<
   const originalAccounts = {
     oldIdentity: { value: input.oldIdentity ?? null, isWritable: true },
     newIdentity: { value: input.newIdentity ?? null, isWritable: true },
+    transferRequest: { value: input.transferRequest ?? null, isWritable: true },
     oldScore: { value: input.oldScore ?? null, isWritable: true },
     newScore: { value: input.newScore ?? null, isWritable: true },
     oldOwner: { value: input.oldOwner ?? null, isWritable: true },
-    newOwner: { value: input.newOwner ?? null, isWritable: false },
+    newOwner: { value: input.newOwner ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -238,18 +249,20 @@ export async function getTransferIdentityInstructionAsync<
     accounts: [
       getAccountMeta(accounts.oldIdentity),
       getAccountMeta(accounts.newIdentity),
+      getAccountMeta(accounts.transferRequest),
       getAccountMeta(accounts.oldScore),
       getAccountMeta(accounts.newScore),
       getAccountMeta(accounts.oldOwner),
       getAccountMeta(accounts.newOwner),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getTransferIdentityInstructionDataEncoder().encode({}),
+    data: getClaimTransferInstructionDataEncoder().encode({}),
     programAddress,
-  } as TransferIdentityInstruction<
+  } as ClaimTransferInstruction<
     TProgramAddress,
     TAccountOldIdentity,
     TAccountNewIdentity,
+    TAccountTransferRequest,
     TAccountOldScore,
     TAccountNewScore,
     TAccountOldOwner,
@@ -258,35 +271,38 @@ export async function getTransferIdentityInstructionAsync<
   >);
 }
 
-export type TransferIdentityInput<
+export type ClaimTransferInput<
   TAccountOldIdentity extends string = string,
   TAccountNewIdentity extends string = string,
+  TAccountTransferRequest extends string = string,
   TAccountOldScore extends string = string,
   TAccountNewScore extends string = string,
   TAccountOldOwner extends string = string,
   TAccountNewOwner extends string = string,
   TAccountSystemProgram extends string = string,
 > = {
+  /** 旧的身份账户（将被关闭） */
   oldIdentity: Address<TAccountOldIdentity>;
+  /** 新的身份账户（自动创建） */
   newIdentity: Address<TAccountNewIdentity>;
-  /**
-   * Address is verified via PDA seeds and additionally in the instruction body.
-   * We only deserialize/process it when `data_len() > 0`.
-   */
+  /** 转移请求账户（将被关闭） */
+  transferRequest: Address<TAccountTransferRequest>;
+  /** 旧的信用分账户（可选，可以是未初始化的） */
   oldScore: Address<TAccountOldScore>;
+  /** 新的信用分账户（自动创建） */
   newScore: Address<TAccountNewScore>;
+  /** 旧身份的所有者 */
   oldOwner: TransactionSigner<TAccountOldOwner>;
-  /**
-   * We only use this address to create the new identity account.
-   * No security checks are needed on this account as it's just a destination address.
-   */
-  newOwner: Address<TAccountNewOwner>;
+  /** 新身份的所有者（接收者） */
+  newOwner: TransactionSigner<TAccountNewOwner>;
+  /** 系统程序 */
   systemProgram?: Address<TAccountSystemProgram>;
 };
 
-export function getTransferIdentityInstruction<
+export function getClaimTransferInstruction<
   TAccountOldIdentity extends string,
   TAccountNewIdentity extends string,
+  TAccountTransferRequest extends string,
   TAccountOldScore extends string,
   TAccountNewScore extends string,
   TAccountOldOwner extends string,
@@ -294,9 +310,10 @@ export function getTransferIdentityInstruction<
   TAccountSystemProgram extends string,
   TProgramAddress extends Address = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
 >(
-  input: TransferIdentityInput<
+  input: ClaimTransferInput<
     TAccountOldIdentity,
     TAccountNewIdentity,
+    TAccountTransferRequest,
     TAccountOldScore,
     TAccountNewScore,
     TAccountOldOwner,
@@ -304,10 +321,11 @@ export function getTransferIdentityInstruction<
     TAccountSystemProgram
   >,
   config?: { programAddress?: TProgramAddress },
-): TransferIdentityInstruction<
+): ClaimTransferInstruction<
   TProgramAddress,
   TAccountOldIdentity,
   TAccountNewIdentity,
+  TAccountTransferRequest,
   TAccountOldScore,
   TAccountNewScore,
   TAccountOldOwner,
@@ -322,10 +340,11 @@ export function getTransferIdentityInstruction<
   const originalAccounts = {
     oldIdentity: { value: input.oldIdentity ?? null, isWritable: true },
     newIdentity: { value: input.newIdentity ?? null, isWritable: true },
+    transferRequest: { value: input.transferRequest ?? null, isWritable: true },
     oldScore: { value: input.oldScore ?? null, isWritable: true },
     newScore: { value: input.newScore ?? null, isWritable: true },
     oldOwner: { value: input.oldOwner ?? null, isWritable: true },
-    newOwner: { value: input.newOwner ?? null, isWritable: false },
+    newOwner: { value: input.newOwner ?? null, isWritable: true },
     systemProgram: { value: input.systemProgram ?? null, isWritable: false },
   };
   const accounts = originalAccounts as Record<
@@ -344,18 +363,20 @@ export function getTransferIdentityInstruction<
     accounts: [
       getAccountMeta(accounts.oldIdentity),
       getAccountMeta(accounts.newIdentity),
+      getAccountMeta(accounts.transferRequest),
       getAccountMeta(accounts.oldScore),
       getAccountMeta(accounts.newScore),
       getAccountMeta(accounts.oldOwner),
       getAccountMeta(accounts.newOwner),
       getAccountMeta(accounts.systemProgram),
     ],
-    data: getTransferIdentityInstructionDataEncoder().encode({}),
+    data: getClaimTransferInstructionDataEncoder().encode({}),
     programAddress,
-  } as TransferIdentityInstruction<
+  } as ClaimTransferInstruction<
     TProgramAddress,
     TAccountOldIdentity,
     TAccountNewIdentity,
+    TAccountTransferRequest,
     TAccountOldScore,
     TAccountNewScore,
     TAccountOldOwner,
@@ -364,40 +385,41 @@ export function getTransferIdentityInstruction<
   >);
 }
 
-export type ParsedTransferIdentityInstruction<
+export type ParsedClaimTransferInstruction<
   TProgram extends string = typeof IDENTITY_SCORE_PROGRAM_ADDRESS,
   TAccountMetas extends readonly AccountMeta[] = readonly AccountMeta[],
 > = {
   programAddress: Address<TProgram>;
   accounts: {
+    /** 旧的身份账户（将被关闭） */
     oldIdentity: TAccountMetas[0];
+    /** 新的身份账户（自动创建） */
     newIdentity: TAccountMetas[1];
-    /**
-     * Address is verified via PDA seeds and additionally in the instruction body.
-     * We only deserialize/process it when `data_len() > 0`.
-     */
-    oldScore: TAccountMetas[2];
-    newScore: TAccountMetas[3];
-    oldOwner: TAccountMetas[4];
-    /**
-     * We only use this address to create the new identity account.
-     * No security checks are needed on this account as it's just a destination address.
-     */
-    newOwner: TAccountMetas[5];
-    systemProgram: TAccountMetas[6];
+    /** 转移请求账户（将被关闭） */
+    transferRequest: TAccountMetas[2];
+    /** 旧的信用分账户（可选，可以是未初始化的） */
+    oldScore: TAccountMetas[3];
+    /** 新的信用分账户（自动创建） */
+    newScore: TAccountMetas[4];
+    /** 旧身份的所有者 */
+    oldOwner: TAccountMetas[5];
+    /** 新身份的所有者（接收者） */
+    newOwner: TAccountMetas[6];
+    /** 系统程序 */
+    systemProgram: TAccountMetas[7];
   };
-  data: TransferIdentityInstructionData;
+  data: ClaimTransferInstructionData;
 };
 
-export function parseTransferIdentityInstruction<
+export function parseClaimTransferInstruction<
   TProgram extends string,
   TAccountMetas extends readonly AccountMeta[],
 >(
   instruction: Instruction<TProgram> &
     InstructionWithAccounts<TAccountMetas> &
     InstructionWithData<ReadonlyUint8Array>,
-): ParsedTransferIdentityInstruction<TProgram, TAccountMetas> {
-  if (instruction.accounts.length < 7) {
+): ParsedClaimTransferInstruction<TProgram, TAccountMetas> {
+  if (instruction.accounts.length < 8) {
     // TODO: Coded error.
     throw new Error("Not enough accounts");
   }
@@ -412,12 +434,13 @@ export function parseTransferIdentityInstruction<
     accounts: {
       oldIdentity: getNextAccount(),
       newIdentity: getNextAccount(),
+      transferRequest: getNextAccount(),
       oldScore: getNextAccount(),
       newScore: getNextAccount(),
       oldOwner: getNextAccount(),
       newOwner: getNextAccount(),
       systemProgram: getNextAccount(),
     },
-    data: getTransferIdentityInstructionDataDecoder().decode(instruction.data),
+    data: getClaimTransferInstructionDataDecoder().decode(instruction.data),
   };
 }

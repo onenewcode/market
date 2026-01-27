@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { AuthPage } from "./AuthPage";
 import { IdentityPage } from "./IdentityPage";
 import { CreditScorePage } from "./CreditScorePage";
+import { TransferPage } from "./TransferPage";
 import { useWalletConnection } from "@solana/react-hooks";
 import { theme } from "./styles/theme";
 import { ADMIN_ADDRESS } from "./config";
@@ -26,6 +27,8 @@ export function MainPage() {
         return <IdentityPage />;
       case "credit_score":
         return <CreditScorePage />;
+      case "transfer":
+        return <TransferPage />;
       default:
         return <AuthPage onNavigate={setPage} />;
     }
@@ -60,6 +63,12 @@ export function MainPage() {
                 className={`${theme.button.nav.base} ${page === "credit_score" ? theme.button.nav.active : theme.button.nav.inactive}`}
               >
                 Credit Score
+              </button>
+              <button
+                onClick={() => setPage("transfer")}
+                className={`${theme.button.nav.base} ${page === "transfer" ? theme.button.nav.active : theme.button.nav.inactive}`}
+              >
+                Transfer
               </button>
               {isAdmin && (
                 <Link

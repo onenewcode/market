@@ -22,11 +22,14 @@ export const IDENTITY_SCORE_ERROR__IDENTITY_NOT_VERIFIED = 0x1771; // 6001
 export const IDENTITY_SCORE_ERROR__SCORE_UPDATE_FAILED = 0x1772; // 6002
 /** IdentityTransferFailed: Failed to transfer identity. */
 export const IDENTITY_SCORE_ERROR__IDENTITY_TRANSFER_FAILED = 0x1773; // 6003
+/** TransferExpired: The transfer request has expired. */
+export const IDENTITY_SCORE_ERROR__TRANSFER_EXPIRED = 0x1774; // 6004
 
 export type IdentityScoreError =
   | typeof IDENTITY_SCORE_ERROR__IDENTITY_NOT_VERIFIED
   | typeof IDENTITY_SCORE_ERROR__IDENTITY_TRANSFER_FAILED
   | typeof IDENTITY_SCORE_ERROR__SCORE_UPDATE_FAILED
+  | typeof IDENTITY_SCORE_ERROR__TRANSFER_EXPIRED
   | typeof IDENTITY_SCORE_ERROR__UNAUTHORIZED;
 
 let identityScoreErrorMessages: Record<IdentityScoreError, string> | undefined;
@@ -35,6 +38,7 @@ if (process.env.NODE_ENV !== "production") {
     [IDENTITY_SCORE_ERROR__IDENTITY_NOT_VERIFIED]: `The identity has not been verified.`,
     [IDENTITY_SCORE_ERROR__IDENTITY_TRANSFER_FAILED]: `Failed to transfer identity.`,
     [IDENTITY_SCORE_ERROR__SCORE_UPDATE_FAILED]: `Failed to update the score.`,
+    [IDENTITY_SCORE_ERROR__TRANSFER_EXPIRED]: `The transfer request has expired.`,
     [IDENTITY_SCORE_ERROR__UNAUTHORIZED]: `You are not authorized to perform this action.`,
   };
 }

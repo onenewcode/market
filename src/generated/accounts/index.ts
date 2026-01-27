@@ -8,3 +8,4 @@
 
 export * from "./creditScoreAccount";
 export * from "./identityAccount";
+export * from "./transferRequest";

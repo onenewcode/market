@@ -15,10 +15,12 @@ import {
 } from "@solana/kit";
 import {
   type ParsedCalculateScoreInstruction,
+  type ParsedCancelTransferInstruction,
+  type ParsedClaimTransferInstruction,
   type ParsedCreateIdentityInstruction,
   type ParsedDeleteIdentityInstruction,
   type ParsedDeleteScoreInstruction,
-  type ParsedTransferIdentityInstruction,
+  type ParsedInitiateTransferInstruction,
   type ParsedUnverifyIdentityInstruction,
   type ParsedVerifyIdentityInstruction,
 } from "../instructions";
@@ -29,6 +31,7 @@ export const IDENTITY_SCORE_PROGRAM_ADDRESS =
 export enum IdentityScoreAccount {
   CreditScoreAccount,
   IdentityAccount,
+  TransferRequest,
 }
 
 export function identifyIdentityScoreAccount(
@@ -57,6 +60,17 @@ export function identifyIdentityScoreAccount(
   ) {
     return IdentityScoreAccount.IdentityAccount;
   }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([200, 121, 88, 202, 12, 160, 237, 12]),
+      ),
+      0,
+    )
+  ) {
+    return IdentityScoreAccount.TransferRequest;
+  }
   throw new Error(
     "The provided account could not be identified as a identityScore account.",
   );
@@ -64,10 +78,12 @@ export function identifyIdentityScoreAccount(
 
 export enum IdentityScoreInstruction {
   CalculateScore,
+  CancelTransfer,
+  ClaimTransfer,
   CreateIdentity,
   DeleteIdentity,
   DeleteScore,
-  TransferIdentity,
+  InitiateTransfer,
   UnverifyIdentity,
   VerifyIdentity,
 }
@@ -86,6 +102,28 @@ export function identifyIdentityScoreInstruction(
     )
   ) {
     return IdentityScoreInstruction.CalculateScore;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([50, 32, 70, 130, 142, 41, 111, 175]),
+      ),
+      0,
+    )
+  ) {
+    return IdentityScoreInstruction.CancelTransfer;
+  }
+  if (
+    containsBytes(
+      data,
+      fixEncoderSize(getBytesEncoder(), 8).encode(
+        new Uint8Array([202, 178, 58, 190, 230, 234, 229, 17]),
+      ),
+      0,
+    )
+  ) {
+    return IdentityScoreInstruction.ClaimTransfer;
   }
   if (
     containsBytes(
@@ -124,12 +162,12 @@ export function identifyIdentityScoreInstruction(
     containsBytes(
       data,
       fixEncoderSize(getBytesEncoder(), 8).encode(
-        new Uint8Array([182, 143, 44, 176, 187, 28, 115, 57]),
+        new Uint8Array([128, 229, 77, 5, 65, 234, 228, 75]),
       ),
       0,
     )
   ) {
-    return IdentityScoreInstruction.TransferIdentity;
+    return IdentityScoreInstruction.InitiateTransfer;
   }
   if (
     containsBytes(
@@ -165,6 +203,12 @@ export type ParsedIdentityScoreInstruction<
       instructionType: IdentityScoreInstruction.CalculateScore;
     } & ParsedCalculateScoreInstruction<TProgram>)
   | ({
+      instructionType: IdentityScoreInstruction.CancelTransfer;
+    } & ParsedCancelTransferInstruction<TProgram>)
+  | ({
+      instructionType: IdentityScoreInstruction.ClaimTransfer;
+    } & ParsedClaimTransferInstruction<TProgram>)
+  | ({
       instructionType: IdentityScoreInstruction.CreateIdentity;
     } & ParsedCreateIdentityInstruction<TProgram>)
   | ({
@@ -174,8 +218,8 @@ export type ParsedIdentityScoreInstruction<
       instructionType: IdentityScoreInstruction.DeleteScore;
     } & ParsedDeleteScoreInstruction<TProgram>)
   | ({
-      instructionType: IdentityScoreInstruction.TransferIdentity;
-    } & ParsedTransferIdentityInstruction<TProgram>)
+      instructionType: IdentityScoreInstruction.InitiateTransfer;
+    } & ParsedInitiateTransferInstruction<TProgram>)
   | ({
       instructionType: IdentityScoreInstruction.UnverifyIdentity;
     } & ParsedUnverifyIdentityInstruction<TProgram>)

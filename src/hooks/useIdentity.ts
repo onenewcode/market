@@ -16,7 +16,6 @@ import { getCreateIdentityInstructionDataEncoder } from "../generated/instructio
 import { getVerifyIdentityInstructionDataEncoder } from "../generated/instructions/verifyIdentity";
 import { getUnverifyIdentityInstructionDataEncoder } from "../generated/instructions/unverifyIdentity";
 import { getDeleteIdentityInstructionDataEncoder } from "../generated/instructions/deleteIdentity";
-import { getTransferIdentityInstructionDataEncoder } from "../generated/instructions/transferIdentity";
 import {
   fetchMaybeIdentityAccount,
   type IdentityAccount,
@@ -33,11 +32,8 @@ export function useIdentity() {
   const [unverifying, setUnverifying] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [exists, setExists] = useState(false);
-  const [transferring, setTransferring] = useState(false);
-  const [showTransferModal, setShowTransferModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showUnverifyModal, setShowUnverifyModal] = useState(false);
-  const [newOwnerAddress, setNewOwnerAddress] = useState("");
 
   const getIdentityPda = useCallback(async (walletAddress: Address) => {
     const encoder = new TextEncoder();
@@ -217,54 +213,6 @@ export function useIdentity() {
     }
   }, [wallet, getIdentityPda, getScorePda, send, fetchIdentity]);
 
-  const transferIdentity = useCallback(async () => {
-    if (!wallet) throw new Error("Wallet not connected");
-    if (!newOwnerAddress) throw new Error("Please enter a new owner address");
-
-    setTransferring(true);
-    try {
-      const walletAddress = wallet.account.address;
-      const oldIdentityPda = await getIdentityPda(walletAddress);
-      const newIdentityPda = await getIdentityPda(newOwnerAddress as Address);
-      const oldScorePda = await getScorePda(walletAddress);
-      const newScorePda = await getScorePda(newOwnerAddress as Address);
-
-      const instruction = {
-        programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
-        accounts: [
-          { address: oldIdentityPda, role: 1 },
-          { address: newIdentityPda, role: 1 },
-          { address: oldScorePda, role: 1 },
-          { address: newScorePda, role: 1 },
-          { address: walletAddress, role: 3 },
-          { address: newOwnerAddress as Address, role: 0 },
-          { address: SYSTEM_PROGRAM_ADDRESS, role: 0 },
-        ],
-        data: getTransferIdentityInstructionDataEncoder().encode({}),
-      };
-
-      await send({ instructions: [instruction] });
-
-      // Refresh identity after transfer
-      await fetchIdentity();
-      setShowTransferModal(false);
-      setNewOwnerAddress("");
-      return true;
-    } catch (error) {
-      console.error("Failed to transfer identity:", error);
-      throw error;
-    } finally {
-      setTransferring(false);
-    }
-  }, [
-    wallet,
-    getIdentityPda,
-    getScorePda,
-    send,
-    fetchIdentity,
-    newOwnerAddress,
-  ]);
-
   return {
     identity,
     loading,
@@ -273,20 +221,14 @@ export function useIdentity() {
     unverifying,
     deleting,
     exists,
-    transferring,
-    showTransferModal,
-    setShowTransferModal,
     showDeleteModal,
     setShowDeleteModal,
     showUnverifyModal,
     setShowUnverifyModal,
-    newOwnerAddress,
-    setNewOwnerAddress,
     createIdentity,
     verifyIdentity,
     unverifyIdentity,
     deleteIdentity,
-    transferIdentity,
     refresh: fetchIdentity,
   };
 }

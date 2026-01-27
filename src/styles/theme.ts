@@ -82,6 +82,7 @@ export const theme = {
   status: {
     verified: "bg-green-500",
     unverified: "bg-yellow-500",
+    active: "bg-blue-500",
     error: "bg-red-500",
     badge: "inline-block w-2 h-2 rounded-full",
     level: {

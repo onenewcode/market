@@ -12,6 +12,7 @@ export const IDENTITY_SCORE_PROGRAM_ADDRESS = ID_PROGRAM_ADDRESS;
 export const SEEDS = {
   IDENTITY: "identity",
   SCORE: "score",
+  TRANSFER_REQUEST: "transfer_request",
 };
 
 export const ADMIN_ADDRESS = "GwYt3KwZFqD6vAWUucgfNcnjmRTZehebYrfkjm3BnpEy";

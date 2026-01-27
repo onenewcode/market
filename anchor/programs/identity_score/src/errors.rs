@@ -10,4 +10,6 @@ pub enum IdentityScoreError {
     ScoreUpdateFailed,
     #[msg("Failed to transfer identity.")]
     IdentityTransferFailed,
+    #[msg("The transfer request has expired.")]
+    TransferExpired,
 }

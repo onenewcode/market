@@ -17,8 +17,15 @@ import { useAlert } from "./hooks/useAlert";
 import { Modal } from "./components/ui/Modal";
 
 export function CreditScorePage() {
-  const { scoreData, calculating, calculateScore, deleteScore, deleting, showDeleteModal, setShowDeleteModal } =
-    useCreditScore();
+  const {
+    scoreData,
+    calculating,
+    calculateScore,
+    deleteScore,
+    deleting,
+    showDeleteModal,
+    setShowDeleteModal,
+  } = useCreditScore();
   const { showAlert } = useAlert();
 
   // Search state
@@ -268,8 +275,8 @@ export function CreditScorePage() {
       >
         <div className="space-y-4">
           <p className="text-sm text-muted">
-            Are you sure you want to delete your credit score? This action cannot
-            be undone.
+            Are you sure you want to delete your credit score? This action
+            cannot be undone.
           </p>
         </div>
       </Modal>

@@ -1,44 +1,112 @@
 use crate::constants::*;
 use crate::errors::IdentityScoreError;
+use crate::events;
 use crate::state::*;
 use anchor_lang::prelude::*;
 
-/// Calculates credit score based on lamports balance
-pub fn calculate_score_from_lamports(lamports: u64) -> (u8, ScoreLevel) {
-    if lamports >= 10 * 1_000_000_000 {
-        (90, ScoreLevel::High)
-    } else if lamports >= 1_000_000_000 {
-        (75, ScoreLevel::Medium)
-    } else if lamports >= 100_000_000 {
-        // 0.1 SOL
-        (60, ScoreLevel::Low)
-    } else if lamports >= 10_000_000 {
-        // 0.01 SOL
-        (45, ScoreLevel::Low)
+const LN_MAX_LAMPORTS: f64 = 23.025850929940457;
+const MAX_AGE_SECONDS: i64 = 365 * 24 * 60 * 60;
+const RENT_EXEMPT_PER_BYTE: u64 = 2_000_000;
+
+const WEIGHT_ASSET: f64 = 0.4;
+const WEIGHT_STABILITY: f64 = 0.3;
+const WEIGHT_RENT_EFFICIENCY: f64 = 0.2;
+const WEIGHT_VERIFICATION: f64 = 0.1;
+
+const SCORE_MIN: f64 = 30.0;
+const SCORE_RANGE: f64 = 60.0;
+
+fn normalize_score(normalized: f64) -> u8 {
+    (SCORE_MIN + SCORE_RANGE * normalized.clamp(0.0, 1.0)) as u8
+}
+
+pub fn calculate_comprehensive_score(
+    lamports: u64,
+    identity_created_at: i64,
+    is_verified: bool,
+    account_data_len: u64,
+    current_timestamp: i64,
+) -> (u8, ScoreLevel) {
+    let total_score = (calculate_asset_score(lamports) as f64 * WEIGHT_ASSET
+        + calculate_stability_score(identity_created_at, is_verified, current_timestamp) as f64
+            * WEIGHT_STABILITY
+        + calculate_rent_efficiency_score(lamports, account_data_len) as f64
+            * WEIGHT_RENT_EFFICIENCY
+        + calculate_verification_score(is_verified) as f64 * WEIGHT_VERIFICATION)
+        as u8;
+
+    let level = if total_score >= 70 {
+        ScoreLevel::High
+    } else if total_score >= 50 {
+        ScoreLevel::Medium
     } else {
-        (30, ScoreLevel::Low)
+        ScoreLevel::Low
+    };
+
+    (total_score, level)
+}
+
+fn calculate_asset_score(lamports: u64) -> u8 {
+    if lamports == 0 {
+        return SCORE_MIN as u8;
+    }
+    normalize_score((lamports as f64).ln() / LN_MAX_LAMPORTS)
+}
+
+fn calculate_stability_score(
+    identity_created_at: i64,
+    is_verified: bool,
+    current_timestamp: i64,
+) -> u8 {
+    let age_seconds = (current_timestamp - identity_created_at).max(0);
+    let age_score = ((age_seconds as f64 / MAX_AGE_SECONDS as f64).clamp(0.0, 1.0) * 60.0) as u8;
+    (age_score + if is_verified { 30 } else { 0 }).min(90)
+}
+
+fn calculate_rent_efficiency_score(lamports: u64, account_data_len: u64) -> u8 {
+    let rent_exempt = (account_data_len as u64 * RENT_EXEMPT_PER_BYTE).max(RENT_EXEMPT_PER_BYTE);
+    let ratio = (lamports as f64 / rent_exempt as f64).clamp(1.0, 10.0);
+    normalize_score((ratio - 1.0) / 9.0)
+}
+
+fn calculate_verification_score(is_verified: bool) -> u8 {
+    if is_verified {
+        90
+    } else {
+        50
     }
 }
 
+pub fn calculate_score_from_lamports(lamports: u64) -> (u8, ScoreLevel) {
+    calculate_comprehensive_score(lamports, 0, true, 100, Clock::get().unwrap().unix_timestamp)
+}
+
 pub fn calculate_score(ctx: Context<CalculateScore>) -> Result<()> {
-    let score_account = &mut ctx.accounts.score_account;
     let owner = &ctx.accounts.owner;
     let identity = &ctx.accounts.identity;
+    let data_len = ctx.accounts.score_account.to_account_info().data_len() as u64;
 
-    // Check if identity is verified
     require!(identity.verified, IdentityScoreError::IdentityNotVerified);
 
-    // Calculate score based on lamports
     let lamports = owner.lamports();
-    let (score, level) = calculate_score_from_lamports(lamports);
     let timestamp = Clock::get()?.unix_timestamp;
+
+    let (score, level) = calculate_comprehensive_score(
+        lamports,
+        identity.created_at,
+        identity.verified,
+        data_len,
+        timestamp,
+    );
+
+    let score_account = &mut ctx.accounts.score_account;
 
     score_account.identity = identity.key();
     score_account.score = score;
     score_account.score_level = level;
     score_account.calculated_at = timestamp;
 
-    emit!(crate::events::ScoreCalculated {
+    emit!(events::ScoreCalculated {
         owner: owner.key(),
         identity: identity.key(),
         score_account: score_account.key(),

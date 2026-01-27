@@ -39,7 +39,15 @@ pub mod identity_score {
         instructions::score::delete_score(ctx)
     }
 
-    pub fn transfer_identity(ctx: Context<TransferIdentity>) -> Result<()> {
-        instructions::transfer::transfer_identity(ctx)
+    pub fn initiate_transfer(ctx: Context<InitiateTransfer>) -> Result<()> {
+        instructions::transfer::initiate_transfer(ctx)
+    }
+
+    pub fn claim_transfer(ctx: Context<ClaimTransfer>) -> Result<()> {
+        instructions::transfer::claim_transfer(ctx)
+    }
+
+    pub fn cancel_transfer(ctx: Context<CancelTransfer>) -> Result<()> {
+        instructions::transfer::cancel_transfer(ctx)
     }
 }
