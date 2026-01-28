@@ -1,11 +1,6 @@
 import { useState } from "react";
-import {
-  getAddressEncoder,
-  getBytesEncoder,
-  getProgramDerivedAddress,
-  type Address,
-} from "@solana/kit";
-import { IDENTITY_SCORE_PROGRAM_ADDRESS, SEEDS, rpc } from "./config";
+import { type Address } from "@solana/kit";
+import { rpc } from "./config";
 import {
   fetchMaybeCreditScoreAccount,
   type CreditScoreAccount,
@@ -14,7 +9,14 @@ import { useCreditScore } from "./hooks/useCreditScore";
 import { ScoreLevel } from "./generated/types/scoreLevel";
 import { theme } from "./styles/theme";
 import { useAlert } from "./hooks/useAlert";
-import { Modal } from "./components/ui/Modal";
+import { Input } from "./components/ui/Input";
+import { ActionButton } from "./components/ui/ActionButton";
+import { ConfirmModal } from "./components/ui/ConfirmModal";
+import { usePda } from "./hooks/usePda";
+import { getErrorMessage } from "./utils/error";
+import { formatTimestamp } from "./utils/time";
+import { useAsyncOperation } from "./hooks/useAsyncOperation";
+import { useConfirmModal } from "./hooks/useConfirmModal";
 
 export function CreditScorePage() {
   const {
@@ -23,12 +25,12 @@ export function CreditScorePage() {
     calculateScore,
     deleteScore,
     deleting,
-    showDeleteModal,
-    setShowDeleteModal,
   } = useCreditScore();
   const { showAlert } = useAlert();
+  const { getScorePda } = usePda();
+  const { execute } = useAsyncOperation();
+  const { modalState, openModal, closeModal, setLoading } = useConfirmModal();
 
-  // Search state
   const [searchAddress, setSearchAddress] = useState("");
   const [searchResult, setSearchResult] = useState<CreditScoreAccount | null>(
     null
@@ -39,49 +41,55 @@ export function CreditScorePage() {
 
   const handleCalculate = async () => {
     const t0 = performance.now();
-    try {
-      await calculateScore();
-    } catch (e) {
-      const errorMsg = e instanceof Error ? e.message : String(e);
-      // Special handling for identity verification error
-      if (errorMsg.includes("Identity not verified")) {
-        showAlert(
-          "Verification Required",
-          "Please verify your identity first before calculating your credit score.",
-          { variant: "warning" }
-        );
-      } else {
-        showAlert(
-          "Calculation Failed",
-          `Failed to calculate score: ${errorMsg}`,
-          { variant: "error" }
-        );
+    await execute(
+      () => calculateScore(),
+      {
+        successMessage: "Credit score calculated successfully",
+        errorMessage: "Failed to calculate score",
+        showSuccessAlert: false,
+        suppressUserCancelAlert: true,
       }
-    } finally {
-      const ms = performance.now() - t0;
-      console.log(
-        "%c[CreditScore] calculateScore 耗时: " + ms.toFixed(0) + "ms",
-        "background:#fff3cd;color:#664d03;font-weight:600;padding:2px 6px;border-radius:4px;border:1px solid #ffeeba"
-      );
-    }
+    ).then((result) => {
+      if (result === null) {
+        const errorMsg = getErrorMessage(new Error("Calculation failed"));
+        if (errorMsg.includes("Identity not verified")) {
+          showAlert(
+            "Verification Required",
+            "Please verify your identity first before calculating your credit score.",
+            { variant: "warning" }
+          );
+        }
+      }
+    });
+    const ms = performance.now() - t0;
+    console.log(
+      "%c[CreditScore] calculateScore 耗时: " + ms.toFixed(0) + "ms",
+      "background:#fff3cd;color:#664d03;font-weight:600;padding:2px 6px;border-radius:4px;border:1px solid #ffeeba"
+    );
   };
 
   const handleDeleteScore = async () => {
-    try {
-      await deleteScore();
-      showAlert(
-        "Score Deleted",
-        "Your credit score has been successfully deleted.",
-        { variant: "success" }
-      );
-    } catch (error) {
-      console.error("Failed to delete score:", error);
-      showAlert(
-        "Deletion Failed",
-        "Failed to delete score. Please try again.",
-        { variant: "error" }
-      );
-    }
+    openModal({
+      title: "Delete Credit Score",
+      message: "Are you sure you want to delete your credit score? This action cannot be undone.",
+      confirmLabel: "Delete",
+      variant: "danger",
+      onConfirm: async () => {
+        setLoading(true);
+        const result = await execute(
+          () => deleteScore(),
+          {
+            successMessage: "Credit score deleted successfully",
+            errorMessage: "Failed to delete score",
+            suppressUserCancelAlert: true,
+          }
+        );
+        setLoading(false);
+        if (result !== null) {
+          closeModal();
+        }
+      },
+    });
   };
 
   const handleSearch = async () => {
@@ -89,15 +97,7 @@ export function CreditScorePage() {
     setSearchStatus("loading");
     setSearchResult(null);
     try {
-      const encoder = new TextEncoder();
-      const [scorePda] = await getProgramDerivedAddress({
-        programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
-        seeds: [
-          getBytesEncoder().encode(encoder.encode(SEEDS.SCORE)),
-          getAddressEncoder().encode(searchAddress as Address),
-        ],
-      });
-
+      const scorePda = await getScorePda(searchAddress as Address);
       const maybe = await fetchMaybeCreditScoreAccount(rpc, scorePda);
       if (maybe.exists) {
         setSearchResult(maybe.data);
@@ -120,13 +120,12 @@ export function CreditScorePage() {
           <p className={`${theme.typography.body} mb-4`}>
             No credit score calculated yet.
           </p>
-          <button
+          <ActionButton
+            label="Calculate Score"
+            loading={calculating}
+            loadingLabel="Calculating..."
             onClick={handleCalculate}
-            disabled={calculating}
-            className={theme.button.variants.primary}
-          >
-            {calculating ? "Calculating..." : "Calculate Score"}
-          </button>
+          />
         </div>
       ) : (
         <div className={`${theme.layout.card} space-y-4`}>
@@ -142,14 +141,13 @@ export function CreditScorePage() {
           >
             <span className={theme.typography.label}>Level</span>
             <span
-              className={`px-3 py-1 rounded-full text-sm font-medium
-                            ${
-                              scoreData.scoreLevel === ScoreLevel.High
-                                ? theme.status.level.high
-                                : scoreData.scoreLevel === ScoreLevel.Medium
-                                  ? theme.status.level.medium
-                                  : theme.status.level.low
-                            }`}
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                scoreData.scoreLevel === ScoreLevel.High
+                  ? theme.status.level.high
+                  : scoreData.scoreLevel === ScoreLevel.Medium
+                    ? theme.status.level.medium
+                    : theme.status.level.low
+              }`}
             >
               {ScoreLevel[scoreData.scoreLevel]}
             </span>
@@ -158,25 +156,25 @@ export function CreditScorePage() {
           <div className={theme.layout.flexBetween}>
             <span className={theme.typography.label}>Last Calculated</span>
             <span className="text-sm font-mono">
-              {new Date(Number(scoreData.calculatedAt) * 1000).toLocaleString()}
+              {formatTimestamp(scoreData.calculatedAt)}
             </span>
           </div>
 
           <div className="pt-4 space-y-3">
-            <button
+            <ActionButton
+              label="Recalculate Score"
+              loading={calculating}
+              loadingLabel="Updating..."
+              variant="secondary"
               onClick={handleCalculate}
-              disabled={calculating}
-              className={`${theme.button.variants.secondary} w-full`}
-            >
-              {calculating ? "Updating..." : "Recalculate Score"}
-            </button>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              disabled={deleting}
-              className={`${theme.button.variants.danger} w-full`}
-            >
-              {deleting ? "Deleting..." : "Delete Score"}
-            </button>
+            />
+            <ActionButton
+              label="Delete Score"
+              loading={deleting}
+              loadingLabel="Deleting..."
+              variant="danger"
+              onClick={handleDeleteScore}
+            />
           </div>
         </div>
       )}
@@ -184,20 +182,19 @@ export function CreditScorePage() {
       <div className={`${theme.layout.card} space-y-4`}>
         <h3 className={theme.typography.h3}>Check Other Account</h3>
         <div className="flex gap-2">
-          <input
-            type="text"
+          <Input
             value={searchAddress}
             onChange={(e) => setSearchAddress(e.target.value)}
             placeholder="Enter wallet address"
-            className={`${theme.input.base} flex-1 focus:border-primary`}
+            className="flex-1"
           />
-          <button
+          <ActionButton
+            label="Search"
+            loading={searchStatus === "loading"}
+            loadingLabel="Searching..."
+            disabled={!searchAddress}
             onClick={handleSearch}
-            disabled={searchStatus === "loading" || !searchAddress}
-            className={`${theme.button.variants.primary} text-sm`}
-          >
-            {searchStatus === "loading" ? "Searching..." : "Search"}
-          </button>
+          />
         </div>
 
         {searchStatus === "error" && (
@@ -223,15 +220,13 @@ export function CreditScorePage() {
             <div className="flex justify-between">
               <span className={`${theme.typography.label} text-sm`}>Level</span>
               <span
-                className={`px-2 py-0.5 rounded-full text-xs font-medium
-                                ${
-                                  searchResult.scoreLevel === ScoreLevel.High
-                                    ? theme.status.level.high
-                                    : searchResult.scoreLevel ===
-                                        ScoreLevel.Medium
-                                      ? theme.status.level.medium
-                                      : theme.status.level.low
-                                }`}
+                className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  searchResult.scoreLevel === ScoreLevel.High
+                    ? theme.status.level.high
+                    : searchResult.scoreLevel === ScoreLevel.Medium
+                      ? theme.status.level.medium
+                      : theme.status.level.low
+                }`}
               >
                 {ScoreLevel[searchResult.scoreLevel]}
               </span>
@@ -241,45 +236,24 @@ export function CreditScorePage() {
                 Updated
               </span>
               <span className="font-mono text-xs">
-                {new Date(
-                  Number(searchResult.calculatedAt) * 1000
-                ).toLocaleString()}
+                {formatTimestamp(searchResult.calculatedAt)}
               </span>
             </div>
           </div>
         )}
       </div>
 
-      <Modal
-        isOpen={showDeleteModal}
-        title="Delete Score"
-        onClose={() => setShowDeleteModal(false)}
-        variant="default"
-        actions={
-          <>
-            <button
-              className={`${theme.button.base} ${theme.button.variants.secondary}`}
-              onClick={() => setShowDeleteModal(false)}
-            >
-              Cancel
-            </button>
-            <button
-              className={`${theme.button.base} ${theme.button.variants.danger}`}
-              onClick={handleDeleteScore}
-              disabled={deleting}
-            >
-              {deleting ? "Deleting..." : "Delete"}
-            </button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-muted">
-            Are you sure you want to delete your credit score? This action
-            cannot be undone.
-          </p>
-        </div>
-      </Modal>
+      <ConfirmModal
+        isOpen={modalState.isOpen}
+        title={modalState.title}
+        message={modalState.message}
+        confirmLabel={modalState.confirmLabel}
+        cancelLabel={modalState.cancelLabel}
+        variant={modalState.variant}
+        onConfirm={modalState.onConfirm}
+        onCancel={closeModal}
+        loading={modalState.loading}
+      />
     </div>
   );
 }

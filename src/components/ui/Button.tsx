@@ -2,7 +2,7 @@ import { type ButtonHTMLAttributes } from "react";
 import { theme } from "../../styles/theme";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "danger";
+  variant?: "primary" | "secondary" | "outline" | "danger" | "warning";
   isLoading?: boolean;
 }
 

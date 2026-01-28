@@ -1,16 +1,10 @@
-import { useWalletConnection, useSendTransaction } from "@solana/react-hooks";
+import { useWalletConnection } from "@solana/react-hooks";
 import { useState, useCallback, useEffect } from "react";
-import {
-  getProgramDerivedAddress,
-  getBytesEncoder,
-  getAddressEncoder,
-  type Address,
-} from "@solana/kit";
+import { type Address } from "@solana/kit";
 import {
   IDENTITY_SCORE_PROGRAM_ADDRESS,
   SYSTEM_PROGRAM_ADDRESS,
   rpc,
-  SEEDS,
 } from "../config";
 import { getInitiateTransferInstructionDataEncoder } from "../generated/instructions/initiateTransfer";
 import { getClaimTransferInstructionDataEncoder } from "../generated/instructions/claimTransfer";
@@ -20,6 +14,9 @@ import {
   type TransferRequest,
   TRANSFER_REQUEST_DISCRIMINATOR,
 } from "../generated/accounts/transferRequest";
+import { usePda } from "./usePda";
+import { useTransactionHelper } from "./useTransactionHelper";
+import { base64ToUint8Array } from "../utils/encoding";
 
 export type TransferStatus = "pending" | "expired" | "claimed" | "cancelled";
 
@@ -30,18 +27,14 @@ export interface TransferRequestWithStatus extends TransferRequest {
   isRecipient: boolean;
 }
 
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes;
-}
-
+/**
+ * 身份转移管理 Hook
+ * 提供身份转移请求的发起、接收、取消等功能
+ */
 export function useTransfer() {
   const { wallet, status } = useWalletConnection();
-  const { send } = useSendTransaction();
+  const { sendTransaction } = useTransactionHelper();
+  const { getIdentityPda, getScorePda, getTransferRequestPda } = usePda();
 
   const [initiating, setInitiating] = useState(false);
   const [claiming, setClaiming] = useState(false);
@@ -50,50 +43,11 @@ export function useTransfer() {
   const [transferRequests, setTransferRequests] = useState<
     TransferRequestWithStatus[]
   >([]);
-  const [showCancelModal, setShowCancelModal] = useState(false);
-  const [selectedTransfer, setSelectedTransfer] =
-    useState<TransferRequestWithStatus | null>(null);
 
-  const getIdentityPda = useCallback(async (walletAddress: Address) => {
-    const encoder = new TextEncoder();
-    const [pda] = await getProgramDerivedAddress({
-      programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
-      seeds: [
-        getBytesEncoder().encode(encoder.encode(SEEDS.IDENTITY)),
-        getAddressEncoder().encode(walletAddress),
-      ],
-    });
-    return pda;
-  }, []);
-
-  const getScorePda = useCallback(async (walletAddress: Address) => {
-    const encoder = new TextEncoder();
-    const [pda] = await getProgramDerivedAddress({
-      programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
-      seeds: [
-        getBytesEncoder().encode(encoder.encode(SEEDS.SCORE)),
-        getAddressEncoder().encode(walletAddress),
-      ],
-    });
-    return pda;
-  }, []);
-
-  const getTransferRequestPda = useCallback(
-    async (fromOwner: Address, toOwner: Address) => {
-      const encoder = new TextEncoder();
-      const [pda] = await getProgramDerivedAddress({
-        programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
-        seeds: [
-          getBytesEncoder().encode(encoder.encode(SEEDS.TRANSFER_REQUEST)),
-          getAddressEncoder().encode(fromOwner),
-          getAddressEncoder().encode(toOwner),
-        ],
-      });
-      return pda;
-    },
-    []
-  );
-
+  /**
+   * 判断转移请求的状态
+   * 根据过期时间判断请求是否已过期
+   */
   const getTransferStatus = useCallback(
     (transferRequest: TransferRequest): TransferStatus => {
       const now = Math.floor(Date.now() / 1000);
@@ -105,6 +59,10 @@ export function useTransfer() {
     []
   );
 
+  /**
+   * 获取所有与当前钱包相关的转移请求
+   * 包括发起的和接收的请求
+   */
   const fetchTransferRequests = useCallback(async () => {
     if (!wallet || status !== "connected") {
       setTransferRequests([]);
@@ -127,7 +85,6 @@ export function useTransfer() {
       for (const account of accounts) {
         try {
           if (!account.account || !account.account.data) {
-            console.log("Account data is undefined, skipping");
             continue;
           }
           const accountData = base64ToUint8Array(account.account.data[0]);
@@ -184,6 +141,10 @@ export function useTransfer() {
     fetchTransferRequests();
   }, [fetchTransferRequests]);
 
+  /**
+   * 发起身份转移请求
+   * 创建一个从当前钱包到目标钱包的转移请求
+   */
   const initiateTransfer = useCallback(
     async (recipientAddress: Address) => {
       if (!wallet) throw new Error("Wallet not connected");
@@ -209,9 +170,7 @@ export function useTransfer() {
           data: getInitiateTransferInstructionDataEncoder().encode({}),
         };
 
-        await send({ instructions: [instruction] });
-
-        await fetchTransferRequests();
+        await sendTransaction(instruction, { onConfirm: fetchTransferRequests });
         return true;
       } catch (error) {
         console.error("Failed to initiate transfer:", error);
@@ -220,9 +179,13 @@ export function useTransfer() {
         setInitiating(false);
       }
     },
-    [wallet, getIdentityPda, getTransferRequestPda, send, fetchTransferRequests]
+    [wallet, getIdentityPda, getTransferRequestPda, sendTransaction, fetchTransferRequests]
   );
 
+  /**
+   * 接收身份转移请求
+   * 将身份和信用分从发送方转移到接收方
+   */
   const claimTransfer = useCallback(
     async (transferRequest: TransferRequestWithStatus) => {
       if (!wallet) throw new Error("Wallet not connected");
@@ -253,9 +216,7 @@ export function useTransfer() {
           data: getClaimTransferInstructionDataEncoder().encode({}),
         };
 
-        await send({ instructions: [instruction] });
-
-        await fetchTransferRequests();
+        await sendTransaction(instruction, { onConfirm: fetchTransferRequests });
         return true;
       } catch (error) {
         console.error("Failed to claim transfer:", error);
@@ -264,9 +225,13 @@ export function useTransfer() {
         setClaiming(false);
       }
     },
-    [wallet, getIdentityPda, getScorePda, send, fetchTransferRequests]
+    [wallet, getIdentityPda, getScorePda, sendTransaction, fetchTransferRequests]
   );
 
+  /**
+   * 取消身份转移请求
+   * 取消当前钱包发起的转移请求
+   */
   const cancelTransfer = useCallback(
     async (transferRequest: TransferRequestWithStatus) => {
       if (!wallet) throw new Error("Wallet not connected");
@@ -282,9 +247,7 @@ export function useTransfer() {
           data: getCancelTransferInstructionDataEncoder().encode({}),
         };
 
-        await send({ instructions: [instruction] });
-
-        await fetchTransferRequests();
+        await sendTransaction(instruction, { onConfirm: fetchTransferRequests });
         return true;
       } catch (error) {
         console.error("Failed to cancel transfer:", error);
@@ -293,15 +256,7 @@ export function useTransfer() {
         setCancelling(false);
       }
     },
-    [wallet, send, fetchTransferRequests]
-  );
-
-  const handleCancelModal = useCallback(
-    (transfer: TransferRequestWithStatus | null) => {
-      setSelectedTransfer(transfer);
-      setShowCancelModal(transfer !== null);
-    },
-    []
+    [wallet, sendTransaction, fetchTransferRequests]
   );
 
   return {
@@ -310,13 +265,9 @@ export function useTransfer() {
     cancelling,
     loading,
     transferRequests,
-    showCancelModal,
-    selectedTransfer,
     initiateTransfer,
     claimTransfer,
     cancelTransfer,
     refresh: fetchTransferRequests,
-    handleCancelModal,
-    setShowCancelModal,
   };
 }

@@ -1,71 +1,56 @@
-import { useWalletConnection, useSendTransaction } from "@solana/react-hooks";
+import { useWalletConnection } from "@solana/react-hooks";
 import { useState, useCallback, useEffect } from "react";
-import {
-  getProgramDerivedAddress,
-  getBytesEncoder,
-  getAddressEncoder,
-  type Address,
-} from "@solana/kit";
-import {
-  IDENTITY_SCORE_PROGRAM_ADDRESS,
-  SYSTEM_PROGRAM_ADDRESS,
-  rpc,
-  SEEDS,
-} from "../config";
-import { getCreateIdentityInstructionDataEncoder } from "../generated/instructions/createIdentity";
-import { getVerifyIdentityInstructionDataEncoder } from "../generated/instructions/verifyIdentity";
-import { getUnverifyIdentityInstructionDataEncoder } from "../generated/instructions/unverifyIdentity";
-import { getDeleteIdentityInstructionDataEncoder } from "../generated/instructions/deleteIdentity";
+import { type Address } from "@solana/kit";
+import { rpc } from "../config";
 import {
   fetchMaybeIdentityAccount,
   type IdentityAccount,
 } from "../generated/accounts/identityAccount";
+import { usePda } from "./usePda";
+import { useTransactionHelper } from "./useTransactionHelper";
+import { getCreateIdentityInstructionDataEncoder } from "../generated/instructions/createIdentity";
+import { getVerifyIdentityInstructionDataEncoder } from "../generated/instructions/verifyIdentity";
+import { getUnverifyIdentityInstructionDataEncoder } from "../generated/instructions/unverifyIdentity";
+import { getDeleteIdentityInstructionDataEncoder } from "../generated/instructions/deleteIdentity";
+import { IDENTITY_SCORE_PROGRAM_ADDRESS, SYSTEM_PROGRAM_ADDRESS } from "../config";
 
+/**
+ * 身份管理 Hook
+ * 提供身份账户的创建、验证、取消验证、删除等核心业务功能
+ */
 export function useIdentity() {
   const { wallet, status } = useWalletConnection();
-  const { send } = useSendTransaction();
+  const { sendTransaction } = useTransactionHelper();
+  const { getIdentityPda, getScorePda } = usePda();
 
+  // 身份账户数据
   const [identity, setIdentity] = useState<IdentityAccount | null>(null);
+  // 加载状态
   const [loading, setLoading] = useState(false);
+  // 创建操作状态
   const [creating, setCreating] = useState(false);
+  // 验证操作状态
   const [verifying, setVerifying] = useState(false);
+  // 取消验证操作状态
   const [unverifying, setUnverifying] = useState(false);
+  // 删除操作状态
   const [deleting, setDeleting] = useState(false);
+  // 身份账户是否存在
   const [exists, setExists] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [showUnverifyModal, setShowUnverifyModal] = useState(false);
 
-  const getIdentityPda = useCallback(async (walletAddress: Address) => {
-    const encoder = new TextEncoder();
-    const [pda] = await getProgramDerivedAddress({
-      programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
-      seeds: [
-        getBytesEncoder().encode(encoder.encode(SEEDS.IDENTITY)),
-        getAddressEncoder().encode(walletAddress),
-      ],
-    });
-    return pda;
-  }, []);
-
-  const getScorePda = useCallback(async (walletAddress: Address) => {
-    const encoder = new TextEncoder();
-    const [pda] = await getProgramDerivedAddress({
-      programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
-      seeds: [
-        getBytesEncoder().encode(encoder.encode(SEEDS.SCORE)),
-        getAddressEncoder().encode(walletAddress),
-      ],
-    });
-    return pda;
-  }, []);
-
+  /**
+   * 获取身份账户信息
+   * 从链上查询当前钱包对应的身份账户数据
+   */
   const fetchIdentity = useCallback(async () => {
     if (!wallet || status !== "connected") return;
 
     setLoading(true);
     try {
       const walletAddress = wallet.account.address;
+      // 根据钱包地址计算身份账户的 PDA
       const pda = await getIdentityPda(walletAddress);
+      // 从链上获取账户信息
       const account = await fetchMaybeIdentityAccount(rpc, pda);
 
       if (account.exists) {
@@ -84,11 +69,14 @@ export function useIdentity() {
     }
   }, [wallet, status, getIdentityPda]);
 
-  // Initial fetch
   useEffect(() => {
     fetchIdentity();
   }, [fetchIdentity]);
 
+  /**
+   * 创建身份账户
+   * 为当前钱包创建一个新的身份账户
+   */
   const createIdentity = useCallback(async () => {
     if (!wallet) throw new Error("Wallet not connected");
 
@@ -97,20 +85,18 @@ export function useIdentity() {
       const walletAddress = wallet.account.address;
       const pda = await getIdentityPda(walletAddress);
 
+      // 构建创建身份指令
       const instruction = {
         programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
         accounts: [
-          { address: pda, role: 1 }, // Writable
-          { address: walletAddress, role: 3 }, // WritableSigner
-          { address: SYSTEM_PROGRAM_ADDRESS, role: 0 }, // Readonly
+          { address: pda, role: 1 }, // 身份账户 (可写)
+          { address: walletAddress, role: 3 }, // 签名者
+          { address: SYSTEM_PROGRAM_ADDRESS, role: 0 }, // 系统程序
         ],
         data: getCreateIdentityInstructionDataEncoder().encode({}),
       };
 
-      await send({ instructions: [instruction] });
-
-      // Refresh identity after creation
-      await fetchIdentity();
+      await sendTransaction(instruction, { onConfirm: fetchIdentity });
       return true;
     } catch (error) {
       console.error("Failed to create identity:", error);
@@ -118,8 +104,12 @@ export function useIdentity() {
     } finally {
       setCreating(false);
     }
-  }, [wallet, getIdentityPda, send, fetchIdentity]);
+  }, [wallet, getIdentityPda, sendTransaction, fetchIdentity]);
 
+  /**
+   * 验证身份
+   * 将当前钱包的身份账户标记为已验证状态
+   */
   const verifyIdentity = useCallback(async () => {
     if (!wallet) throw new Error("Wallet not connected");
 
@@ -128,19 +118,17 @@ export function useIdentity() {
       const walletAddress = wallet.account.address;
       const pda = await getIdentityPda(walletAddress);
 
+      // 构建验证身份指令
       const instruction = {
         programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
         accounts: [
-          { address: pda, role: 1 }, // Writable
-          { address: walletAddress, role: 3 }, // WritableSigner
+          { address: pda, role: 1 }, // 身份账户 (可写)
+          { address: walletAddress, role: 3 }, // 签名者
         ],
         data: getVerifyIdentityInstructionDataEncoder().encode({}),
       };
 
-      await send({ instructions: [instruction] });
-
-      // Refresh identity after verification
-      await fetchIdentity();
+      await sendTransaction(instruction, { onConfirm: fetchIdentity });
       return true;
     } catch (error) {
       console.error("Failed to verify identity:", error);
@@ -148,8 +136,12 @@ export function useIdentity() {
     } finally {
       setVerifying(false);
     }
-  }, [wallet, getIdentityPda, send, fetchIdentity]);
+  }, [wallet, getIdentityPda, sendTransaction, fetchIdentity]);
 
+  /**
+   * 取消验证身份
+   * 将当前钱包的身份账户标记为未验证状态
+   */
   const unverifyIdentity = useCallback(async () => {
     if (!wallet) throw new Error("Wallet not connected");
 
@@ -158,19 +150,17 @@ export function useIdentity() {
       const walletAddress = wallet.account.address;
       const pda = await getIdentityPda(walletAddress);
 
+      // 构建取消验证身份指令
       const instruction = {
         programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
         accounts: [
-          { address: pda, role: 1 }, // Writable
-          { address: walletAddress, role: 3 }, // WritableSigner
+          { address: pda, role: 1 }, // 身份账户 (可写)
+          { address: walletAddress, role: 3 }, // 签名者
         ],
         data: getUnverifyIdentityInstructionDataEncoder().encode({}),
       };
 
-      await send({ instructions: [instruction] });
-
-      // Refresh identity after unverification
-      await fetchIdentity();
+      await sendTransaction(instruction, { onConfirm: fetchIdentity });
       return true;
     } catch (error) {
       console.error("Failed to unverify identity:", error);
@@ -178,8 +168,13 @@ export function useIdentity() {
     } finally {
       setUnverifying(false);
     }
-  }, [wallet, getIdentityPda, send, fetchIdentity]);
+  }, [wallet, getIdentityPda, sendTransaction, fetchIdentity]);
 
+  /**
+   * 删除身份账户
+   * 删除当前钱包的身份账户及其关联的分数账户
+   * 并回收账户租金
+   */
   const deleteIdentity = useCallback(async () => {
     if (!wallet) throw new Error("Wallet not connected");
 
@@ -192,18 +187,15 @@ export function useIdentity() {
       const instruction = {
         programAddress: IDENTITY_SCORE_PROGRAM_ADDRESS,
         accounts: [
-          { address: identityPda, role: 1 }, // Writable
-          { address: scorePda, role: 1 }, // Writable
-          { address: walletAddress, role: 3 }, // WritableSigner
-          { address: SYSTEM_PROGRAM_ADDRESS, role: 0 }, // Readonly
+          { address: identityPda, role: 1 },
+          { address: scorePda, role: 1 },
+          { address: walletAddress, role: 3 },
+          { address: SYSTEM_PROGRAM_ADDRESS, role: 0 },
         ],
         data: getDeleteIdentityInstructionDataEncoder().encode({}),
       };
 
-      await send({ instructions: [instruction] });
-
-      // Refresh identity after deletion
-      await fetchIdentity();
+      await sendTransaction(instruction, { onConfirm: fetchIdentity });
       return true;
     } catch (error) {
       console.error("Failed to delete identity:", error);
@@ -211,7 +203,7 @@ export function useIdentity() {
     } finally {
       setDeleting(false);
     }
-  }, [wallet, getIdentityPda, getScorePda, send, fetchIdentity]);
+  }, [wallet, getIdentityPda, getScorePda, sendTransaction, fetchIdentity]);
 
   return {
     identity,
@@ -221,10 +213,6 @@ export function useIdentity() {
     unverifying,
     deleting,
     exists,
-    showDeleteModal,
-    setShowDeleteModal,
-    showUnverifyModal,
-    setShowUnverifyModal,
     createIdentity,
     verifyIdentity,
     unverifyIdentity,
