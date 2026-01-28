@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useAlert } from "./useAlert";
-import { getErrorMessage } from "../utils/error";
+import { getErrorMessage, isUserCancelledError } from "../utils/error";
 
 export interface AsyncOperationOptions {
   successMessage?: string;
@@ -9,7 +9,6 @@ export interface AsyncOperationOptions {
   onError?: (error: Error) => void;
   showSuccessAlert?: boolean;
   showErrorAlert?: boolean;
-  suppressUserCancelAlert?: boolean;
   onUserCancel?: () => void;
 }
 
@@ -18,7 +17,7 @@ export function useAsyncOperation() {
   const { showAlert } = useAlert();
 
   const execute = useCallback(
-    async <T,>(
+    async <T>(
       operation: () => Promise<T>,
       options: AsyncOperationOptions = {}
     ): Promise<T | null> => {
@@ -29,7 +28,6 @@ export function useAsyncOperation() {
         onError,
         showSuccessAlert = false,
         showErrorAlert = true,
-        suppressUserCancelAlert = false,
         onUserCancel,
       } = options;
 
@@ -69,15 +67,4 @@ export function useAsyncOperation() {
   );
 
   return { execute, loading };
-}
-
-function isUserCancelledError(error: unknown): boolean {
-  const errorMsg = getErrorMessage(error).toLowerCase();
-  const userCancelPatterns = [
-    "user rejected",
-    "user cancelled",
-    "transaction cancelled",
-    "transaction plan failed to execute",
-  ];
-  return userCancelPatterns.some((pattern) => errorMsg.includes(pattern));
 }

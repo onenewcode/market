@@ -170,7 +170,9 @@ export function useTransfer() {
           data: getInitiateTransferInstructionDataEncoder().encode({}),
         };
 
-        await sendTransaction(instruction, { onConfirm: fetchTransferRequests });
+        await sendTransaction(instruction, {
+          onConfirm: fetchTransferRequests,
+        });
         return true;
       } catch (error) {
         console.error("Failed to initiate transfer:", error);
@@ -179,7 +181,13 @@ export function useTransfer() {
         setInitiating(false);
       }
     },
-    [wallet, getIdentityPda, getTransferRequestPda, sendTransaction, fetchTransferRequests]
+    [
+      wallet,
+      getIdentityPda,
+      getTransferRequestPda,
+      sendTransaction,
+      fetchTransferRequests,
+    ]
   );
 
   /**
@@ -216,7 +224,9 @@ export function useTransfer() {
           data: getClaimTransferInstructionDataEncoder().encode({}),
         };
 
-        await sendTransaction(instruction, { onConfirm: fetchTransferRequests });
+        await sendTransaction(instruction, {
+          onConfirm: fetchTransferRequests,
+        });
         return true;
       } catch (error) {
         console.error("Failed to claim transfer:", error);
@@ -225,7 +235,13 @@ export function useTransfer() {
         setClaiming(false);
       }
     },
-    [wallet, getIdentityPda, getScorePda, sendTransaction, fetchTransferRequests]
+    [
+      wallet,
+      getIdentityPda,
+      getScorePda,
+      sendTransaction,
+      fetchTransferRequests,
+    ]
   );
 
   /**
@@ -247,7 +263,9 @@ export function useTransfer() {
           data: getCancelTransferInstructionDataEncoder().encode({}),
         };
 
-        await sendTransaction(instruction, { onConfirm: fetchTransferRequests });
+        await sendTransaction(instruction, {
+          onConfirm: fetchTransferRequests,
+        });
         return true;
       } catch (error) {
         console.error("Failed to cancel transfer:", error);

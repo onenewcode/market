@@ -1,7 +1,6 @@
 import { useWalletConnection } from "@solana/react-hooks";
 import { useIdentity } from "./hooks/useIdentity";
 import { theme } from "./styles/theme";
-import { useAlert } from "./hooks/useAlert";
 import { ActionButton } from "./components/ui/ActionButton";
 import { ConfirmModal } from "./components/ui/ConfirmModal";
 import { AddressDisplay } from "./components/ui/AddressDisplay";
@@ -21,9 +20,7 @@ export function IdentityPage() {
     unverifying,
     deleteIdentity,
     deleting,
-    refresh,
   } = useIdentity();
-  const { showAlert } = useAlert();
   const { execute } = useAsyncOperation();
   const { modalState, openModal, closeModal, setLoading } = useConfirmModal();
 
@@ -32,14 +29,10 @@ export function IdentityPage() {
   if (!identity) return <div>No identity found. Please create one.</div>;
 
   const handleVerifyIdentity = async () => {
-    await execute(
-      () => verifyIdentity(),
-      {
-        successMessage: "Identity verified successfully",
-        errorMessage: "Failed to verify identity",
-        suppressUserCancelAlert: true,
-      }
-    );
+    await execute(() => verifyIdentity(), {
+      successMessage: "Identity verified successfully",
+      errorMessage: "Failed to verify identity",
+    });
   };
 
   const handleUnverifyIdentity = async () => {
@@ -50,14 +43,10 @@ export function IdentityPage() {
       variant: "primary",
       onConfirm: async () => {
         setLoading(true);
-        const result = await execute(
-          () => unverifyIdentity(),
-          {
-            successMessage: "Identity unverified successfully",
-            errorMessage: "Failed to unverify identity",
-            suppressUserCancelAlert: true,
-          }
-        );
+        const result = await execute(() => unverifyIdentity(), {
+          successMessage: "Identity unverified successfully",
+          errorMessage: "Failed to unverify identity",
+        });
         setLoading(false);
         if (result !== null) {
           closeModal();
@@ -69,19 +58,16 @@ export function IdentityPage() {
   const handleDeleteIdentity = async () => {
     openModal({
       title: "Delete Identity",
-      message: "Are you sure you want to delete your identity? This action cannot be undone.",
+      message:
+        "Are you sure you want to delete your identity? This action cannot be undone.",
       confirmLabel: "Delete",
       variant: "danger",
       onConfirm: async () => {
         setLoading(true);
-        const result = await execute(
-          () => deleteIdentity(),
-          {
-            successMessage: "Identity deleted successfully",
-            errorMessage: "Failed to delete identity",
-            suppressUserCancelAlert: true,
-          }
-        );
+        const result = await execute(() => deleteIdentity(), {
+          successMessage: "Identity deleted successfully",
+          errorMessage: "Failed to delete identity",
+        });
         setLoading(false);
         if (result !== null) {
           closeModal();

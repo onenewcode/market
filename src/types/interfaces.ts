@@ -32,14 +32,14 @@ export interface AccountFetcher<T> {
 }
 
 export interface TransactionBuilder {
-  addInstruction(instruction: any): void;
-  build(): any[];
+  addInstruction(instruction: unknown): void;
+  build(): unknown[];
 }
 
 export interface WalletAdapter {
   address: Address;
-  signTransaction(transaction: any): Promise<any>;
-  signAllTransactions(transactions: any[]): Promise<any[]>;
+  signTransaction(transaction: unknown): Promise<unknown>;
+  signAllTransactions(transactions: unknown[]): Promise<unknown[]>;
 }
 
 export interface ProgramInterface {
@@ -62,20 +62,23 @@ export interface StorageAdapter {
 }
 
 export interface Logger {
-  info(message: string, ...args: any[]): void;
-  error(message: string, ...args: any[]): void;
-  warn(message: string, ...args: any[]): void;
-  debug(message: string, ...args: any[]): void;
+  info(message: string, ...args: unknown[]): void;
+  error(message: string, ...args: unknown[]): void;
+  warn(message: string, ...args: unknown[]): void;
+  debug(message: string, ...args: unknown[]): void;
 }
 
 export interface AnalyticsTracker {
-  trackEvent(eventName: string, properties?: Record<string, any>): void;
-  trackError(error: Error, context?: Record<string, any>): void;
+  trackEvent(eventName: string, properties?: Record<string, unknown>): void;
+  trackError(error: Error, context?: Record<string, unknown>): void;
   trackPageView(pageName: string): void;
 }
 
 export interface NotificationService {
-  showNotification(message: string, type: "success" | "error" | "warning" | "info"): void;
+  showNotification(
+    message: string,
+    type: "success" | "error" | "warning" | "info"
+  ): void;
   showError(message: string): void;
   showSuccess(message: string): void;
 }

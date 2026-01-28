@@ -1,4 +1,4 @@
-import { type Address } from "@solana/kit";
+import { type Address, type ReadonlyUint8Array } from "@solana/kit";
 import {
   IDENTITY_SCORE_PROGRAM_ADDRESS,
   SYSTEM_PROGRAM_ADDRESS,
@@ -25,12 +25,11 @@ import {
   fetchMaybeTransferRequest,
   type TransferRequest,
 } from "../generated/accounts/transferRequest";
-import { usePda } from "../hooks/usePda";
 
 export interface Instruction {
   programAddress: Address;
   accounts: { address: Address; role: number }[];
-  data: Uint8Array | Buffer | Readonly<Uint8Array> | any;
+  data: Uint8Array | Buffer | ReadonlyUint8Array;
 }
 
 export class IdentityScoreService {
@@ -62,7 +61,9 @@ export class IdentityScoreService {
     }
   }
 
-  async fetchTransferRequest(address: Address): Promise<TransferRequest | null> {
+  async fetchTransferRequest(
+    address: Address
+  ): Promise<TransferRequest | null> {
     try {
       const result = await fetchMaybeTransferRequest(rpc, address);
       return result.exists ? result.data : null;

@@ -19,9 +19,28 @@ export function isNetworkError(error: unknown): boolean {
 
 export function isUserCancelledError(error: unknown): boolean {
   const message = getErrorMessage(error).toLowerCase();
-  return (
-    message.includes("user rejected") ||
-    message.includes("user cancelled") ||
-    message.includes("transaction cancelled")
-  );
+
+  const userCancelPatterns = [
+    "user rejected",
+    "user cancelled",
+    "transaction cancelled",
+  ];
+
+  if (userCancelPatterns.some((pattern) => message.includes(pattern))) {
+    return true;
+  }
+
+  if (error instanceof Error) {
+    const errorWithCause = error as Error & { cause?: unknown };
+    if (errorWithCause.cause) {
+      const causeMessage = getErrorMessage(errorWithCause.cause).toLowerCase();
+      if (
+        userCancelPatterns.some((pattern) => causeMessage.includes(pattern))
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }

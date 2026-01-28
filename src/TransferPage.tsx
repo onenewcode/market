@@ -10,7 +10,6 @@ import { TransferCard } from "./components/ui/TransferCard";
 import { EmptyState } from "./components/ui/EmptyState";
 import { ConfirmModal } from "./components/ui/ConfirmModal";
 import { address } from "@solana/kit";
-import { getErrorMessage } from "./utils/error";
 import { useAsyncOperation } from "./hooks/useAsyncOperation";
 import { useConfirmModal } from "./hooks/useConfirmModal";
 
@@ -33,8 +32,9 @@ export function TransferPage() {
   const { modalState, openModal, closeModal, setLoading } = useConfirmModal();
 
   const [recipientAddress, setRecipientAddress] = useState("");
-  const [selectedTransfer, setSelectedTransfer] =
-    useState<(typeof transferRequests)[0] | null>(null);
+  const [selectedTransfer, setSelectedTransfer] = useState<
+    (typeof transferRequests)[0] | null
+  >(null);
 
   if (!wallet) {
     return (
@@ -65,28 +65,21 @@ export function TransferPage() {
     }
 
     const recipientAddr = address(recipientAddress);
-    await execute(
-      () => initiateTransfer(recipientAddr),
-      {
-        successMessage: "Transfer initiated successfully",
-        errorMessage: "Failed to initiate transfer",
-        suppressUserCancelAlert: true,
-      }
-    );
+    await execute(() => initiateTransfer(recipientAddr), {
+      successMessage: "Transfer initiated successfully",
+      errorMessage: "Failed to initiate transfer",
+    });
     setRecipientAddress("");
   };
 
   const handleClaimTransfer = async (
     transfer: (typeof transferRequests)[0]
   ) => {
-    await execute(
-      () => claimTransfer(transfer),
-      {
-        successMessage: "You have successfully claimed the identity transfer. Your identity and credit score have been transferred.",
-        errorMessage: "Failed to claim transfer",
-        suppressUserCancelAlert: true,
-      }
-    );
+    await execute(() => claimTransfer(transfer), {
+      successMessage:
+        "You have successfully claimed the identity transfer. Your identity and credit score have been transferred.",
+      errorMessage: "Failed to claim transfer",
+    });
   };
 
   const handleCancelTransfer = async () => {
@@ -94,19 +87,16 @@ export function TransferPage() {
 
     openModal({
       title: "Cancel Transfer",
-      message: "Are you sure you want to cancel this transfer request? This action cannot be undone.",
+      message:
+        "Are you sure you want to cancel this transfer request? This action cannot be undone.",
       confirmLabel: "Cancel Transfer",
       variant: "danger",
       onConfirm: async () => {
         setLoading(true);
-        const result = await execute(
-          () => cancelTransfer(selectedTransfer),
-          {
-            successMessage: "Transfer cancelled successfully",
-            errorMessage: "Failed to cancel transfer",
-            suppressUserCancelAlert: true,
-          }
-        );
+        const result = await execute(() => cancelTransfer(selectedTransfer), {
+          successMessage: "Transfer cancelled successfully",
+          errorMessage: "Failed to cancel transfer",
+        });
         setLoading(false);
         if (result !== null) {
           closeModal();

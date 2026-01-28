@@ -176,7 +176,7 @@ export function useCreditScore() {
           } else {
             setScoreData(null);
           }
-        }
+        },
       });
       return true;
     } catch (error) {

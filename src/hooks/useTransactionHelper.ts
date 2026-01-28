@@ -1,28 +1,18 @@
 import { useSendTransaction } from "@solana/react-hooks";
 import { useWalletConnection } from "@solana/react-hooks";
 import { useCallback } from "react";
-import { type Address } from "@solana/kit";
+import { type Address, type ReadonlyUint8Array } from "@solana/kit";
+import { isUserCancelledError } from "../utils/error";
 
 export interface TransactionInstruction {
   programAddress: Address;
   accounts: { address: Address; role: number }[];
-  data: Uint8Array | Buffer | Readonly<Uint8Array> | any;
+  data: Uint8Array | Buffer | ReadonlyUint8Array;
 }
 
 export interface TransactionOptions {
   delayAfterSend?: number;
   onConfirm?: () => void | Promise<void>;
-}
-
-function isUserCancelledError(error: unknown): boolean {
-  const errorMsg = error instanceof Error ? error.message.toLowerCase() : String(error).toLowerCase();
-  const userCancelPatterns = [
-    "user rejected",
-    "user cancelled",
-    "transaction cancelled",
-    "transaction plan failed to execute",
-  ];
-  return userCancelPatterns.some((pattern) => errorMsg.includes(pattern));
 }
 
 export function useTransactionHelper() {
@@ -47,9 +37,7 @@ export function useTransactionHelper() {
         await send({ instructions: instructionArray });
 
         if (delayAfterSend > 0) {
-          await new Promise((resolve) =>
-            setTimeout(resolve, delayAfterSend)
-          );
+          await new Promise((resolve) => setTimeout(resolve, delayAfterSend));
         }
 
         if (onConfirm) {
@@ -60,10 +48,11 @@ export function useTransactionHelper() {
       } catch (error) {
         if (isUserCancelledError(error)) {
           console.warn("User cancelled transaction");
+          return false;
         } else {
           console.error("Transaction failed:", error);
+          throw error;
         }
-        throw error;
       }
     },
     [wallet, send]

@@ -19,13 +19,8 @@ import { useAsyncOperation } from "./hooks/useAsyncOperation";
 import { useConfirmModal } from "./hooks/useConfirmModal";
 
 export function CreditScorePage() {
-  const {
-    scoreData,
-    calculating,
-    calculateScore,
-    deleteScore,
-    deleting,
-  } = useCreditScore();
+  const { scoreData, calculating, calculateScore, deleteScore, deleting } =
+    useCreditScore();
   const { showAlert } = useAlert();
   const { getScorePda } = usePda();
   const { execute } = useAsyncOperation();
@@ -41,15 +36,11 @@ export function CreditScorePage() {
 
   const handleCalculate = async () => {
     const t0 = performance.now();
-    await execute(
-      () => calculateScore(),
-      {
-        successMessage: "Credit score calculated successfully",
-        errorMessage: "Failed to calculate score",
-        showSuccessAlert: false,
-        suppressUserCancelAlert: true,
-      }
-    ).then((result) => {
+    await execute(() => calculateScore(), {
+      successMessage: "Credit score calculated successfully",
+      errorMessage: "Failed to calculate score",
+      showSuccessAlert: false,
+    }).then((result) => {
       if (result === null) {
         const errorMsg = getErrorMessage(new Error("Calculation failed"));
         if (errorMsg.includes("Identity not verified")) {
@@ -71,19 +62,16 @@ export function CreditScorePage() {
   const handleDeleteScore = async () => {
     openModal({
       title: "Delete Credit Score",
-      message: "Are you sure you want to delete your credit score? This action cannot be undone.",
+      message:
+        "Are you sure you want to delete your credit score? This action cannot be undone.",
       confirmLabel: "Delete",
       variant: "danger",
       onConfirm: async () => {
         setLoading(true);
-        const result = await execute(
-          () => deleteScore(),
-          {
-            successMessage: "Credit score deleted successfully",
-            errorMessage: "Failed to delete score",
-            suppressUserCancelAlert: true,
-          }
-        );
+        const result = await execute(() => deleteScore(), {
+          successMessage: "Credit score deleted successfully",
+          errorMessage: "Failed to delete score",
+        });
         setLoading(false);
         if (result !== null) {
           closeModal();

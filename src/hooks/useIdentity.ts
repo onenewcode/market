@@ -1,6 +1,5 @@
 import { useWalletConnection } from "@solana/react-hooks";
 import { useState, useCallback, useEffect } from "react";
-import { type Address } from "@solana/kit";
 import { rpc } from "../config";
 import {
   fetchMaybeIdentityAccount,
@@ -12,7 +11,10 @@ import { getCreateIdentityInstructionDataEncoder } from "../generated/instructio
 import { getVerifyIdentityInstructionDataEncoder } from "../generated/instructions/verifyIdentity";
 import { getUnverifyIdentityInstructionDataEncoder } from "../generated/instructions/unverifyIdentity";
 import { getDeleteIdentityInstructionDataEncoder } from "../generated/instructions/deleteIdentity";
-import { IDENTITY_SCORE_PROGRAM_ADDRESS, SYSTEM_PROGRAM_ADDRESS } from "../config";
+import {
+  IDENTITY_SCORE_PROGRAM_ADDRESS,
+  SYSTEM_PROGRAM_ADDRESS,
+} from "../config";
 
 /**
  * 身份管理 Hook
