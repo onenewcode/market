@@ -217,7 +217,7 @@ export function useTransfer() {
             { address: transferRequest.transferRequestAddress, role: 1 },
             { address: oldScorePda, role: 1 },
             { address: newScorePda, role: 1 },
-            { address: oldOwner, role: 3 },
+            { address: oldOwner, role: 1 },
             { address: walletAddress, role: 3 },
             { address: SYSTEM_PROGRAM_ADDRESS, role: 0 },
           ],

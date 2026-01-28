@@ -81,8 +81,7 @@ export type ClaimTransferInstruction<
         ? WritableAccount<TAccountNewScore>
         : TAccountNewScore,
       TAccountOldOwner extends string
-        ? WritableSignerAccount<TAccountOldOwner> &
-            AccountSignerMeta<TAccountOldOwner>
+        ? WritableAccount<TAccountOldOwner>
         : TAccountOldOwner,
       TAccountNewOwner extends string
         ? WritableSignerAccount<TAccountNewOwner> &
@@ -144,8 +143,8 @@ export type ClaimTransferAsyncInput<
   oldScore: Address<TAccountOldScore>;
   /** 新的信用分账户（自动创建） */
   newScore?: Address<TAccountNewScore>;
-  /** 旧身份的所有者 */
-  oldOwner: TransactionSigner<TAccountOldOwner>;
+  /** 旧身份的所有者（不需要签名，已通过 initiate_transfer 授权） */
+  oldOwner: Address<TAccountOldOwner>;
   /** 新身份的所有者（接收者） */
   newOwner: TransactionSigner<TAccountNewOwner>;
   /** 系统程序 */
@@ -291,8 +290,8 @@ export type ClaimTransferInput<
   oldScore: Address<TAccountOldScore>;
   /** 新的信用分账户（自动创建） */
   newScore: Address<TAccountNewScore>;
-  /** 旧身份的所有者 */
-  oldOwner: TransactionSigner<TAccountOldOwner>;
+  /** 旧身份的所有者（不需要签名，已通过 initiate_transfer 授权） */
+  oldOwner: Address<TAccountOldOwner>;
   /** 新身份的所有者（接收者） */
   newOwner: TransactionSigner<TAccountNewOwner>;
   /** 系统程序 */
@@ -401,7 +400,7 @@ export type ParsedClaimTransferInstruction<
     oldScore: TAccountMetas[3];
     /** 新的信用分账户（自动创建） */
     newScore: TAccountMetas[4];
-    /** 旧身份的所有者 */
+    /** 旧身份的所有者（不需要签名，已通过 initiate_transfer 授权） */
     oldOwner: TAccountMetas[5];
     /** 新身份的所有者（接收者） */
     newOwner: TAccountMetas[6];

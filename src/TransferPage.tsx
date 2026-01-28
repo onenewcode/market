@@ -15,7 +15,7 @@ import { useConfirmModal } from "./hooks/useConfirmModal";
 
 export function TransferPage() {
   const { wallet } = useWalletConnection();
-  const { identity } = useIdentity();
+  const { identity, refresh: refreshIdentity } = useIdentity();
   const {
     initiating,
     claiming,
@@ -46,16 +46,6 @@ export function TransferPage() {
     );
   }
 
-  if (!identity) {
-    return (
-      <div className={theme.layout.pageContainer}>
-        <div className={theme.layout.card}>
-          <p>No identity found. Please create an identity first.</p>
-        </div>
-      </div>
-    );
-  }
-
   const handleInitiateTransfer = async () => {
     if (!recipientAddress) {
       showAlert("Invalid Input", "Please enter a recipient address.", {
@@ -75,11 +65,14 @@ export function TransferPage() {
   const handleClaimTransfer = async (
     transfer: (typeof transferRequests)[0]
   ) => {
-    await execute(() => claimTransfer(transfer), {
+    const result = await execute(() => claimTransfer(transfer), {
       successMessage:
-        "You have successfully claimed the identity transfer. Your identity and credit score have been transferred.",
+        "You have successfully claimed identity transfer. Your identity and credit score have been transferred.",
       errorMessage: "Failed to claim transfer",
     });
+    if (result !== null) {
+      refreshIdentity();
+    }
   };
 
   const handleCancelTransfer = async () => {
@@ -116,29 +109,31 @@ export function TransferPage() {
     <div className={theme.layout.pageContainer}>
       <h2 className={theme.typography.h2}>Identity Transfer</h2>
 
-      <div className={`${theme.layout.card} space-y-4`}>
-        <h3 className={theme.typography.h3}>Initiate Transfer</h3>
-        <p className="text-sm text-content-secondary">
-          Transfer your identity to another wallet address. The recipient must
-          claim the transfer before it expires.
-        </p>
+      {identity && (
+        <div className={`${theme.layout.card} space-y-4`}>
+          <h3 className={theme.typography.h3}>Initiate Transfer</h3>
+          <p className="text-sm text-content-secondary">
+            Transfer your identity to another wallet address. The recipient must
+            claim the transfer before it expires.
+          </p>
 
-        <div className="flex gap-2">
-          <Input
-            value={recipientAddress}
-            onChange={(e) => setRecipientAddress(e.target.value)}
-            placeholder="Enter recipient wallet address"
-            className="flex-1"
-          />
-          <ActionButton
-            label="Initiate Transfer"
-            loading={initiating}
-            loadingLabel="Initiating..."
-            disabled={!recipientAddress}
-            onClick={handleInitiateTransfer}
-          />
+          <div className="flex gap-2">
+            <Input
+              value={recipientAddress}
+              onChange={(e) => setRecipientAddress(e.target.value)}
+              placeholder="Enter recipient wallet address"
+              className="flex-1"
+            />
+            <ActionButton
+              label="Initiate Transfer"
+              loading={initiating}
+              loadingLabel="Initiating..."
+              disabled={!recipientAddress}
+              onClick={handleInitiateTransfer}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <div className={`${theme.layout.card} space-y-4`}>
         <div className={`${theme.layout.flexBetween}`}>

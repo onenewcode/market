@@ -11,33 +11,14 @@ use anchor_lang::prelude::*;
 /// 只需要传入接收者的地址，系统会自动创建转移请求
 /// 接收者需要在过期前认领转移
 pub fn initiate_transfer(ctx: Context<InitiateTransfer>) -> Result<()> {
-    msg!("=== Initiate Transfer Started ===");
-    msg!("Owner: {}", ctx.accounts.owner.key());
-    msg!("Recipient: {}", ctx.accounts.recipient.key());
-    msg!("Identity: {}", ctx.accounts.identity.key());
-    msg!("Transfer Request: {}", ctx.accounts.transfer_request.key());
-    msg!("Identity Owner: {}", ctx.accounts.identity.owner);
-    msg!("Identity Verified: {}", ctx.accounts.identity.verified);
-    msg!("Program ID: {}", ctx.program_id);
-
     let transfer_request = &mut ctx.accounts.transfer_request;
     let timestamp = Clock::get()?.unix_timestamp;
-
-    msg!("Timestamp: {}", timestamp);
-    msg!("Expires At: {}", timestamp + TRANSFER_EXPIRY_SECONDS);
 
     transfer_request.from_owner = ctx.accounts.owner.key();
     transfer_request.to_owner = ctx.accounts.recipient.key();
     transfer_request.identity = ctx.accounts.identity.key();
     transfer_request.created_at = timestamp;
     transfer_request.expires_at = timestamp + TRANSFER_EXPIRY_SECONDS;
-
-    msg!("Transfer Request Initialized:");
-    msg!("  From Owner: {}", transfer_request.from_owner);
-    msg!("  To Owner: {}", transfer_request.to_owner);
-    msg!("  Identity: {}", transfer_request.identity);
-    msg!("  Created At: {}", transfer_request.created_at);
-    msg!("  Expires At: {}", transfer_request.expires_at);
 
     emit!(events::TransferInitiated {
         from_owner: ctx.accounts.owner.key(),
@@ -48,7 +29,6 @@ pub fn initiate_transfer(ctx: Context<InitiateTransfer>) -> Result<()> {
         timestamp,
     });
 
-    msg!("=== Initiate Transfer Completed Successfully ===");
     Ok(())
 }
 
@@ -70,18 +50,6 @@ pub fn claim_transfer(ctx: Context<ClaimTransfer>) -> Result<()> {
     let timestamp = Clock::get()?.unix_timestamp;
     let transfer_request = &ctx.accounts.transfer_request;
 
-    msg!("=== Transfer Claim Started ===");
-    msg!("Old Owner: {}", ctx.accounts.old_owner.key());
-    msg!("New Owner: {}", ctx.accounts.new_owner.key());
-    msg!("Old Identity: {}", ctx.accounts.old_identity.key());
-    msg!("New Identity: {}", ctx.accounts.new_identity.key());
-    msg!("Transfer Request: {}", transfer_request.key());
-    msg!("Current Timestamp: {}", timestamp);
-    msg!(
-        "Transfer Request Expires At: {}",
-        transfer_request.expires_at
-    );
-
     require!(
         timestamp <= transfer_request.expires_at,
         IdentityScoreError::TransferExpired
@@ -92,60 +60,33 @@ pub fn claim_transfer(ctx: Context<ClaimTransfer>) -> Result<()> {
         IdentityScoreError::Unauthorized
     );
 
-    msg!("Transfer Request Validated:");
-    msg!("  From Owner: {}", transfer_request.from_owner);
-    msg!("  To Owner: {}", transfer_request.to_owner);
-    msg!("  Identity: {}", transfer_request.identity);
-
     ctx.accounts.new_identity.owner = ctx.accounts.new_owner.key();
     ctx.accounts.new_identity.created_at = ctx.accounts.old_identity.created_at;
     ctx.accounts.new_identity.verified = ctx.accounts.old_identity.verified;
     ctx.accounts.new_identity.verified_at = ctx.accounts.old_identity.verified_at;
 
-    msg!("New Identity Initialized:");
-    msg!("  Owner: {}", ctx.accounts.new_identity.owner);
-    msg!("  Created At: {}", ctx.accounts.new_identity.created_at);
-    msg!("  Verified: {}", ctx.accounts.new_identity.verified);
-
     let (old_score_key, new_score_key) = if ctx.accounts.old_score.data_len() > 0 {
-        msg!("Old Score Account Found, Transferring...");
         let score_state = verify_and_extract_old_score(&ctx)?;
-
-        msg!("Old Score Data:");
-        msg!("  Score: {}", score_state.score);
-        msg!("  Score Level: {}", score_state.score_level);
-        msg!("  Calculated At: {}", score_state.calculated_at);
 
         let score_lamports = ctx.accounts.old_score.lamports();
         **ctx.accounts.old_score.lamports.borrow_mut() = 0;
         **ctx
             .accounts
-            .old_owner
+            .new_owner
             .to_account_info()
             .lamports
             .borrow_mut() += score_lamports;
-
-        msg!(
-            "Transferred {} lamports from old score to old owner",
-            score_lamports
-        );
 
         ctx.accounts.new_score.identity = ctx.accounts.new_identity.key();
         ctx.accounts.new_score.score = score_state.score;
         ctx.accounts.new_score.score_level = score_state.score_level;
         ctx.accounts.new_score.calculated_at = score_state.calculated_at;
 
-        msg!("New Score Initialized:");
-        msg!("  Identity: {}", ctx.accounts.new_score.identity);
-        msg!("  Score: {}", ctx.accounts.new_score.score);
-        msg!("  Score Level: {}", ctx.accounts.new_score.score_level);
-
         (
             Some(ctx.accounts.old_score.key()),
             Some(ctx.accounts.new_score.key()),
         )
     } else {
-        msg!("No Old Score Account Found");
         (None, None)
     };
 
@@ -159,8 +100,6 @@ pub fn claim_transfer(ctx: Context<ClaimTransfer>) -> Result<()> {
         timestamp,
     });
 
-    msg!("=== Transfer Claim Completed Successfully ===");
-
     Ok(())
 }
 
@@ -170,29 +109,13 @@ pub fn claim_transfer(ctx: Context<ClaimTransfer>) -> Result<()> {
 /// 转移发起者可以取消未认领的转移请求
 /// 转移请求账户会被关闭，lamports 返回给发起者
 pub fn cancel_transfer(ctx: Context<CancelTransfer>) -> Result<()> {
-    let timestamp = Clock::get()?.unix_timestamp;
-
-    msg!("=== Transfer Cancellation Started ===");
-    msg!("Owner: {}", ctx.accounts.owner.key());
-    msg!("Transfer Request: {}", ctx.accounts.transfer_request.key());
-    msg!("Current Timestamp: {}", timestamp);
-
-    msg!("Transfer Request Details:");
-    msg!("  From Owner: {}", ctx.accounts.transfer_request.from_owner);
-    msg!("  To Owner: {}", ctx.accounts.transfer_request.to_owner);
-    msg!("  Identity: {}", ctx.accounts.transfer_request.identity);
-    msg!("  Created At: {}", ctx.accounts.transfer_request.created_at);
-    msg!("  Expires At: {}", ctx.accounts.transfer_request.expires_at);
-
     emit!(events::TransferCancelled {
         from_owner: ctx.accounts.owner.key(),
         to_owner: ctx.accounts.transfer_request.to_owner,
         identity: ctx.accounts.transfer_request.identity,
         transfer_request: ctx.accounts.transfer_request.key(),
-        timestamp,
+        timestamp: Clock::get()?.unix_timestamp,
     });
-
-    msg!("=== Transfer Cancellation Completed Successfully ===");
 
     Ok(())
 }
@@ -337,9 +260,10 @@ pub struct ClaimTransfer<'info> {
     )]
     pub new_score: Account<'info, CreditScoreAccount>,
 
-    /// 旧身份的所有者
+    /// 旧身份的所有者（不需要签名，已通过 initiate_transfer 授权）
+    /// CHECK: 仅用于验证身份所有权和关闭账户
     #[account(mut)]
-    pub old_owner: Signer<'info>,
+    pub old_owner: AccountInfo<'info>,
 
     /// 新身份的所有者（接收者）
     #[account(mut)]
