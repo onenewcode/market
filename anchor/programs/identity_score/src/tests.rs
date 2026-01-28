@@ -1618,7 +1618,8 @@ mod tests {
 
         let transfer_request_account = svm.get_account(&transfer_request_pda).unwrap();
         let mut data_slice = &transfer_request_account.data[..];
-        let transfer_request_data = crate::state::TransferRequest::try_deserialize(&mut data_slice).unwrap();
+        let transfer_request_data =
+            crate::state::TransferRequest::try_deserialize(&mut data_slice).unwrap();
 
         assert_eq!(
             transfer_request_data.expires_at - transfer_request_data.created_at,
@@ -1842,14 +1843,13 @@ mod tests {
 
         let transfer_request_account = svm.get_account(&transfer_request_pda).unwrap();
         let mut data_slice = &transfer_request_account.data[..];
-        let transfer_request_data = crate::state::TransferRequest::try_deserialize(&mut data_slice).unwrap();
+        let transfer_request_data =
+            crate::state::TransferRequest::try_deserialize(&mut data_slice).unwrap();
 
         assert_eq!(transfer_request_data.from_owner, old_owner.pubkey());
         assert_eq!(transfer_request_data.to_owner, new_owner.pubkey());
         assert_eq!(transfer_request_data.identity, old_identity_pda);
-        assert!(
-            transfer_request_data.expires_at > transfer_request_data.created_at
-        );
+        assert!(transfer_request_data.expires_at > transfer_request_data.created_at);
         assert_eq!(
             transfer_request_data.expires_at - transfer_request_data.created_at,
             crate::constants::TRANSFER_EXPIRY_SECONDS

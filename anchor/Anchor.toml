@@ -4,10 +4,10 @@
 resolution = true
 skip-lint = false
 
-[programs.localnet]
-identity_score = "8qQcqDRpNQEWPjNz62XHooWKr61Ewd8DHj9j2RU1ePFs"
-
 [programs.devnet]
+
+[programs.localnet]
+identity_score = "7dTkLRoAkjVFnLvbPoPhxFFXLNAwg7VfDw798GjEZ4xk"
 
 [registry]
 url = "https://api.apr.dev"

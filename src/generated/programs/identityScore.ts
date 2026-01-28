@@ -26,7 +26,7 @@ import {
 } from "../instructions";
 
 export const IDENTITY_SCORE_PROGRAM_ADDRESS =
-  "8qQcqDRpNQEWPjNz62XHooWKr61Ewd8DHj9j2RU1ePFs" as Address<"8qQcqDRpNQEWPjNz62XHooWKr61Ewd8DHj9j2RU1ePFs">;
+  "7dTkLRoAkjVFnLvbPoPhxFFXLNAwg7VfDw798GjEZ4xk" as Address<"7dTkLRoAkjVFnLvbPoPhxFFXLNAwg7VfDw798GjEZ4xk">;
 
 export enum IdentityScoreAccount {
   CreditScoreAccount,
@@ -197,7 +197,7 @@ export function identifyIdentityScoreInstruction(
 }
 
 export type ParsedIdentityScoreInstruction<
-  TProgram extends string = "8qQcqDRpNQEWPjNz62XHooWKr61Ewd8DHj9j2RU1ePFs",
+  TProgram extends string = "7dTkLRoAkjVFnLvbPoPhxFFXLNAwg7VfDw798GjEZ4xk",
 > =
   | ({
       instructionType: IdentityScoreInstruction.CalculateScore;

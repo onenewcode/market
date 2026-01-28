@@ -98,3 +98,12 @@ npm run dev
 - `npm run preview`: 预览生产构建版本。
 - `npm run ci`: 执行 CI 检查（构建 + lint + 格式检查）。
 - `npx tsc --noEmit`: 检查 TypeScript 类型是否正确。
+
+### anchor build
+
+```bash
+cargo clean && anchor build && anchor keys sync && anchor build
+
+# 更新前端id
+npm run codama:js
+```

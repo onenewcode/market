@@ -37,14 +37,16 @@ cd anchor
 echo "3️⃣  Building Anchor project..."
 anchor build
 
-echo "4️⃣  Deploying programs..."
+echo "4️⃣  Syncing programs ID..."
+# sync programs id
+anchor keys sync
 
-# Deploy Identity Score Program
-echo "   Deploying Identity Score..."
-solana program deploy target/deploy/identity_score.so --program-id target/deploy/identity_score-keypair.json
+cd ..
 
-echo "✅ Deployment complete! Your programs are now live on the local validator."
-echo "   Identity Score ID: $(solana-keygen pubkey target/deploy/identity_score-keypair.json)"
+npm run codama:js
 
-# Optional: Kill validator on exit if we started it
-# trap "kill $VALIDATOR_PID" EXIT
+cd anchor
+
+echo "5️⃣  Deploying programs..."
+anchor deploy
+

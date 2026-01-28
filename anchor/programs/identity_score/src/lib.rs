@@ -9,7 +9,7 @@ mod tests;
 
 use instructions::*;
 
-declare_id!("8qQcqDRpNQEWPjNz62XHooWKr61Ewd8DHj9j2RU1ePFs");
+declare_id!("7dTkLRoAkjVFnLvbPoPhxFFXLNAwg7VfDw798GjEZ4xk");
 
 #[program]
 pub mod identity_score {

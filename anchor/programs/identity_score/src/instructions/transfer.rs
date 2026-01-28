@@ -11,16 +11,33 @@ use anchor_lang::prelude::*;
 /// 只需要传入接收者的地址，系统会自动创建转移请求
 /// 接收者需要在过期前认领转移
 pub fn initiate_transfer(ctx: Context<InitiateTransfer>) -> Result<()> {
+    msg!("=== Initiate Transfer Started ===");
+    msg!("Owner: {}", ctx.accounts.owner.key());
+    msg!("Recipient: {}", ctx.accounts.recipient.key());
+    msg!("Identity: {}", ctx.accounts.identity.key());
+    msg!("Transfer Request: {}", ctx.accounts.transfer_request.key());
+    msg!("Identity Owner: {}", ctx.accounts.identity.owner);
+    msg!("Identity Verified: {}", ctx.accounts.identity.verified);
+    msg!("Program ID: {}", ctx.program_id);
+
     let transfer_request = &mut ctx.accounts.transfer_request;
     let timestamp = Clock::get()?.unix_timestamp;
 
-
+    msg!("Timestamp: {}", timestamp);
+    msg!("Expires At: {}", timestamp + TRANSFER_EXPIRY_SECONDS);
 
     transfer_request.from_owner = ctx.accounts.owner.key();
     transfer_request.to_owner = ctx.accounts.recipient.key();
     transfer_request.identity = ctx.accounts.identity.key();
     transfer_request.created_at = timestamp;
     transfer_request.expires_at = timestamp + TRANSFER_EXPIRY_SECONDS;
+
+    msg!("Transfer Request Initialized:");
+    msg!("  From Owner: {}", transfer_request.from_owner);
+    msg!("  To Owner: {}", transfer_request.to_owner);
+    msg!("  Identity: {}", transfer_request.identity);
+    msg!("  Created At: {}", transfer_request.created_at);
+    msg!("  Expires At: {}", transfer_request.expires_at);
 
     emit!(events::TransferInitiated {
         from_owner: ctx.accounts.owner.key(),
@@ -31,6 +48,7 @@ pub fn initiate_transfer(ctx: Context<InitiateTransfer>) -> Result<()> {
         timestamp,
     });
 
+    msg!("=== Initiate Transfer Completed Successfully ===");
     Ok(())
 }
 
